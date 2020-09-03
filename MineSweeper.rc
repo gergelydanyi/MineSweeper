@@ -52,8 +52,21 @@ END
 
 IDR_MENU1 MENU
 BEGIN
-    MENUITEM "Game",                        0
-    MENUITEM "Help",                        0
+    POPUP "Game"
+    BEGIN
+        POPUP "New"
+        BEGIN
+            MENUITEM "Easy",                        ID_NEW_EASY
+            MENUITEM "Normal",                      ID_NEW_NORMAL
+            MENUITEM "Hard",                        ID_NEW_HARD
+            MENUITEM "Custom",                      ID_NEW_CUSTOM
+        END
+        MENUITEM "Settings",                    ID_GAME_SETTINGS
+    END
+    POPUP "Help"
+    BEGIN
+        MENUITEM "About",                       ID_HELP_ABOUT
+    END
 END
 
 #endif    // Hungarian (Hungary) resources
