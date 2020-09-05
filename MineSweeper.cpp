@@ -199,7 +199,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			pState->mouse.LDX = GET_X_LPARAM(lParam);
 			pState->mouse.LDY = GET_Y_LPARAM(lParam);
-			if (!pState->GO)
+			if (!pState->GO && pState->mouse.LDX >= pState->grid.gx && pState->mouse.LDY >= pState->grid.gy)
 			{
 				int dx = (pState->mouse.LDX - pState->grid.gx) / pState->grid.w;
 				int dy = (pState->mouse.LDY - pState->grid.gy) / pState->grid.h;
@@ -225,30 +225,33 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			int uy = (pState->mouse.LUY - pState->grid.gy) / pState->grid.h;
 			int dx = (pState->mouse.LDX - pState->grid.gx) / pState->grid.w;
 			int dy = (pState->mouse.LDY - pState->grid.gy) / pState->grid.h;
-			if (pState->map.FieldValue[dx][dy] & FV_Pushed)
+			if (pState->mouse.LDX >= pState->grid.gx && pState->mouse.LDY >= pState->grid.gy)
 			{
-				pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] ^ FV_Pushed;
-			}
-			if (pState->map.FieldValue[ux][uy] & FV_Pushed)
-			{
-				pState->map.FieldValue[ux][uy] = pState->map.FieldValue[ux][uy] ^ FV_Pushed;
-			}
-			if(dx==ux && dy==uy && (pState->map.FieldValue[ux][uy] & FV_Flag) != FV_Flag)// && !pState->GO)
-			{
-				if (pState->NG)
+				if (pState->map.FieldValue[dx][dy] & FV_Pushed)
 				{
-					NewGame(hwnd, pState, pState->map.sizeX, pState->map.sizeY, pState->map.cMine, ux + 1, uy + 1);
-					pState->NG = false;
+					pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] ^ FV_Pushed;
 				}
-				if (UnhideField(hwnd, pState, ux, uy))
+				if (pState->map.FieldValue[ux][uy] & FV_Pushed)
 				{
-					GameOver(hwnd, pState);
+					pState->map.FieldValue[ux][uy] = pState->map.FieldValue[ux][uy] ^ FV_Pushed;
 				}
-			}
-			else
-			{
-				RECT r = { {pState->grid.gx + dx * pState->grid.w},	{pState->grid.gy + dy * pState->grid.h}, {pState->grid.gx + ++dx * pState->grid.w}, {pState->grid.gy + ++dy * pState->grid.h} };
-				InvalidateRect(hwnd, &r, TRUE);
+				if (dx == ux && dy == uy && (pState->map.FieldValue[ux][uy] & FV_Flag) != FV_Flag)// && !pState->GO)
+				{
+					if (pState->NG)
+					{
+						NewGame(hwnd, pState, pState->map.sizeX, pState->map.sizeY, pState->map.cMine, ux + 1, uy + 1);
+						pState->NG = false;
+					}
+					if (UnhideField(hwnd, pState, ux, uy))
+					{
+						GameOver(hwnd, pState);
+					}
+				}
+				else
+				{
+					RECT r = { {pState->grid.gx + dx * pState->grid.w},	{pState->grid.gy + dy * pState->grid.h}, {pState->grid.gx + ++dx * pState->grid.w}, {pState->grid.gy + ++dy * pState->grid.h} };
+					InvalidateRect(hwnd, &r, TRUE);
+				}
 			}
 			
 			debug(hwnd, pState);
