@@ -233,7 +233,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			{
 				pState->map.FieldValue[ux][uy] = pState->map.FieldValue[ux][uy] ^ FV_Pushed;
 			}
-			if(dx==ux && dy==uy && (pState->map.FieldValue[ux][uy] & FV_Flag) != FV_Flag && !pState->GO)
+			if(dx==ux && dy==uy && (pState->map.FieldValue[ux][uy] & FV_Flag) != FV_Flag)// && !pState->GO)
 			{
 				if (pState->NG)
 				{
@@ -414,14 +414,22 @@ int FillMapWithNumbers(StateInfo* pState)
 			cm = 0;
 			if ((pState->map.FieldValue[i][j] & FV_Mine) != FV_Mine)
 			{
-				if (i>0 && j>0 && pState->map.FieldValue[i - 1][j - 1] & FV_Mine) { ++cm; }
+/*				if (i>0 && j>0 && pState->map.FieldValue[i - 1][j - 1] & FV_Mine) { ++cm; }
 				if (j>0 && pState->map.FieldValue[i    ][j - 1] & FV_Mine) { ++cm; }
 				if (i<pState->map.sizeX && j > 0 && pState->map.FieldValue[i + 1][j - 1] & FV_Mine) { ++cm; }
 				if (i < pState->map.sizeX && pState->map.FieldValue[i + 1][j    ] & FV_Mine) { ++cm; }
 				if (i < pState->map.sizeX && j < pState->map.sizeY && pState->map.FieldValue[i + 1][j + 1] & FV_Mine) { ++cm; }
 				if (j < pState->map.sizeY && pState->map.FieldValue[i    ][j + 1] & FV_Mine) { ++cm; }
 				if (i>0 && j < pState->map.sizeY && pState->map.FieldValue[i - 1][j + 1] & FV_Mine) { ++cm; }
-				if (i>0 && pState->map.FieldValue[i - 1][j    ] & FV_Mine) { ++cm; }
+				if (i>0 && pState->map.FieldValue[i - 1][j    ] & FV_Mine) { ++cm; }*/
+				if (i>0 && j>0 && (pState->map.FieldValue[i - 1][j - 1] & FV_Mine)) { ++cm; }
+				if (j>0 && (pState->map.FieldValue[i    ][j - 1] & FV_Mine)) { ++cm; }
+				if (i<pState->map.sizeX-1 && j > 0 && (pState->map.FieldValue[i + 1][j - 1] & FV_Mine)) { ++cm; }
+				if (i < pState->map.sizeX-1 && (pState->map.FieldValue[i + 1][j    ] & FV_Mine)) { ++cm; }
+				if (i < pState->map.sizeX-1 && j < pState->map.sizeY-1 && (pState->map.FieldValue[i + 1][j + 1] & FV_Mine)) { ++cm; }
+				if (j < pState->map.sizeY-1 && (pState->map.FieldValue[i    ][j + 1] & FV_Mine)) { ++cm; }
+				if (i>0 && j < pState->map.sizeY-1 && (pState->map.FieldValue[i - 1][j + 1] & FV_Mine)) { ++cm; }
+				if (i>0 && (pState->map.FieldValue[i - 1][j    ] & FV_Mine)) { ++cm; }
 				switch (cm)
 				{
 				case 0:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_0; break;
@@ -574,6 +582,7 @@ int GameOver(HWND hwnd, StateInfo* pState)
 				RECT r = { {pState->grid.gx + i * pState->grid.w},	{pState->grid.gy + j * pState->grid.h}, {pState->grid.gx + (i + 1) * pState->grid.w}, {pState->grid.gy + (j + 1) * pState->grid.h} };
 				InvalidateRect(hwnd, &r, TRUE);
 			}
+			UnhideField(hwnd, pState, i, j);
 		}
 	}
 	return 0;
@@ -596,10 +605,10 @@ int DrawMine(HDC hdc, StateInfo* pState, int i, int j)
 	LineTo(hdc, right, bottom);
 	MoveToEx(hdc, right, top, NULL);
 	LineTo(hdc, left, bottom);
-	MoveToEx(hdc, (left + right) / 2, top, NULL);
-	LineTo(hdc, (left + right) / 2, bottom);
-	MoveToEx(hdc, (top + bottom) / 2, left, NULL);
-	LineTo(hdc, (top + bottom) / 2, right);
+	MoveToEx(hdc, (left + right) / 2, top-1, NULL);
+	LineTo(hdc, (left + right) / 2, bottom+1);
+	MoveToEx(hdc, left-1, (top + bottom) / 2, NULL);
+	LineTo(hdc, right+1, (top + bottom) / 2);
 	left += 3;
 	top += 3;
 	right -= 6;
