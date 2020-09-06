@@ -46,6 +46,8 @@ constexpr auto clr_MineBackGO = RGB(255, 0, 0);
 constexpr auto clr_Flag = RGB(255, 0, 0);
 constexpr auto clr_Flagstaff = RGB(0, 0, 0);
 
+constexpr auto tmr_GameTime = 1;
+
 // This struct comprises information about the gameboard and its fields
 struct MapInfo
 {
@@ -76,6 +78,7 @@ struct StateInfo
 	bool GO = false;													// Is game over?
 	bool DEBUG = true;													// Debugging mode is currently ON
 	bool NG = true;														// New game until first left click on game board
+	long GameTime = 0;
 };
 
 LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -123,6 +126,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
+
+	SetTimer(hWnd, tmr_GameTime, 1000, NULL);
 
 	MSG msg;
 	while (GetMessageW(&msg, NULL, 0, 0))
@@ -178,7 +183,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					case ID_NEW_CUSTOM:
 					{
 						//TODO: input dialog box is needed
-						NewGame(hwnd, pState, 10, 10, 50, 0, 0);
+						NewGame(hwnd, pState, 50, 40, 50, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
@@ -288,6 +293,22 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			pState->mouse.RUX = GET_X_LPARAM(lParam);
 			pState->mouse.RUY = GET_Y_LPARAM(lParam);
 			debug(hwnd, pState);
+		}
+		return 0;
+		case WM_TIMER:
+		{
+			HDC hdc = GetWindowDC(hwnd);
+			std::wstring ws;
+			const wchar_t* cs;
+			wchar_t wts[30];
+			int ls;
+			ws = std::to_wstring(pState->GameTime++);
+			cs = ws.c_str();
+			wcscpy_s(wts, cs);
+//			wcscat_s(wts, cs);
+			ls = std::wcslen(wts);
+			TextOutW(hdc, 200, 60, wts, ls);
+			ReleaseDC(hwnd, hdc);
 		}
 		return 0;
 		case WM_PAINT:
