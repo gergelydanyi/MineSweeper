@@ -1,4 +1,4 @@
-#ifndef UNICODE
+﻿#ifndef UNICODE
 #define UNICODE
 #endif
 
@@ -6,98 +6,25 @@
 #include <windowsx.h>
 #include "resource.h"
 #include <string>
-
-// Field value constants for individual areas on gameboard
-
-constexpr auto FV_Mine		= 0x0001;									// A mine is on the field
-constexpr auto FV_Flag		= 0x0002;									// The field is suggested to contain mine, a flag is drawn after right click
-constexpr auto FV_Ask		= 0x0004;									// Question mark is drawn after second right click (not yet ready)
-constexpr auto FV_0			= 0x0008;									// There is no mine in the surrounding fields
-constexpr auto FV_1			= 0x0010;									// There is 1 mine in the surrounding fields
-constexpr auto FV_2			= 0x0020;									// ...
-constexpr auto FV_3			= 0x0040;									// And so on ...
-constexpr auto FV_4			= 0x0080;									// ...
-constexpr auto FV_5			= 0x0100;									//
-constexpr auto FV_6			= 0x0200;									// There's six ...
-constexpr auto FV_7			= 0x0400;									// ...
-constexpr auto FV_8			= 0x0800;									// All of the surrounding fields contain a mine
-constexpr auto FV_Clear		= 0x1000;									// Field is cleared, wheter is contains mine or not
-constexpr auto FV_Change	= 0x2000;									// Not used anymore
-constexpr auto FV_Pushed	= 0x4000;									// Indicates if left button is down on a field
-
-// Color constants
-
-constexpr auto clr_1 = RGB(0, 0, 255);
-constexpr auto clr_2 = RGB(0, 155, 0);
-constexpr auto clr_3 = RGB(255, 0, 0);
-constexpr auto clr_4 = RGB(0, 0, 155);
-constexpr auto clr_5 = RGB(155, 0, 0);
-constexpr auto clr_6 = RGB(0, 155, 155);
-constexpr auto clr_7 = RGB(0, 0, 0);;
-constexpr auto clr_8 = RGB(155, 155, 155);;
-constexpr auto clr_GridLine = RGB(180, 180, 180);
-constexpr auto clr_GridBack = RGB(200, 200, 200);
-constexpr auto clr_BtnLightEdge = RGB(255, 255, 255);
-constexpr auto clr_BtnDarkEdge = RGB(160, 160, 160);
-constexpr auto clr_BtnFace = RGB(200, 200, 200);
-constexpr auto clr_Mine = RGB(0, 0, 0);
-constexpr auto clr_MineGlitter = RGB(255, 255, 255);
-constexpr auto clr_MineBackGO = RGB(255, 0, 0);
-constexpr auto clr_Flag = RGB(255, 0, 0);
-constexpr auto clr_Flagstaff = RGB(0, 0, 0);
-
-constexpr auto tmr_GameTime = 1;
-
-// This struct comprises information about the gameboard and its fields
-struct MapInfo
-{
-	const int Xmax = 100;
-	const int Ymax = 100;
-	int sizeX = 15;														// Horizontal size of gameboard
-	int sizeY = 20;														// Vertical size of gameboard
-	int cMine = 10;														// Number of mines on gameboard
-	short int FieldValue[100][100] = {};								// This array comprises flags for each field on the gameboard
-};
-// This struct is responsible for graphical sizeing of gameboard
-struct GridInfo
-{
-	long gx = 20, gy = 40;												// upper left coordinates of the gameboard
-	int cx = 15, cy = 20, w = 20, h = 20;
-};
-// This struct stores mouse pointer coordinates in different states of mouse (Left, Right, Up, Down and Previous and Current coordinates)
-struct MouseInfo
-{
-	long LDX = 0, LDY = 0, LUX = 0, LUY = 0, RDX = 0, RDY = 0, RUX = 0, RUY = 0, XP = 0, YP = 0, X = 0, Y = 0;
-};
-// This struct is used to store information about the state of the application
-struct StateInfo
-{
-	GridInfo grid;
-	MapInfo map;
-	MouseInfo mouse;
-	bool GO = false;													// Is game over?
-	bool DEBUG = true;													// Debugging mode is currently ON
-	bool NG = true;														// New game until first left click on game board
-	long GameTime = 0;
-};
+#include "StateInfo.h"
 
 LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-int NewGame(HWND hwnd, StateInfo* pState, int sizeX, int sizeY, int cMine, int clickX, int clickY);
-int ClearMap(StateInfo* pState);
+void DrawCustomTitleBar(HWND hwnd, HDC hdc);
+void DrawCustomControlButtons(HWND hwnd, HDC hdc);
+void DrawCustomBorder(HWND hwnd, HDC hdc);
 int DrawField(HDC hdc, StateInfo* pState, int i, int j);
 int DrawFlag(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMine(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMap(HDC hdc, StateInfo* pState, HRGN hrgn);
-int FillMap(StateInfo* pState, int a, int b, int cMine);
-int FillMapWithNumbers(StateInfo* pState);
-int UnhideField(HWND hwnd,StateInfo* pState, int i, int j);
-int GameOver(HWND hwnd, StateInfo* pState);
+//int UnhideField(HWND hwnd,StateInfo* pState, int i, int j);
+//int GameOver(HWND hwnd, StateInfo* pState);
 int debug(HWND hwnd, StateInfo* pState);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 {
 	StateInfo* pState = new StateInfo;
-	ClearMap(pState);
+	// TODO: insert ClearMap function to the constructor of StateInfo class
+	pState->ClearMap();
 
 	if(pState == NULL)
 	{
@@ -110,17 +37,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 	wc.lpfnWndProc = HandleMessages;
 	wc.lpszClassName = CLASS_NAME;
 	wc.hInstance = hInstance;
-	wc.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+	//wc.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+	wc.hbrBackground = CreateSolidBrush(RGB(100, 30, 10));
 	wc.lpszMenuName = MAKEINTRESOURCEW(IDR_MENU1);
 	//wc.hCursor = (HCURSOR)IDC_ARROW;									// this caused an unknown error for some reason
 
 	RegisterClassW(&wc);
-
+	// TODO: Create function which gives back the dimensions of the window
 	HWND hWnd = CreateWindowW(
 		CLASS_NAME,
 		L"MineSweeper",
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, 235, 290,
 		NULL, NULL, hInstance, pState
 	);
 
@@ -147,7 +75,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		CREATESTRUCTW* pcs = reinterpret_cast<CREATESTRUCTW*>(lParam);
 		pState = reinterpret_cast<StateInfo*>(pcs->lpCreateParams);
 		SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)pState);
-		NewGame(hwnd, pState, 9, 9, 10, 0, 0);
+		pState->NewGame(hwnd, 9, 9, 10, 0, 0);
 	}
 	else
 	{
@@ -164,26 +92,26 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				{
 					case ID_NEW_EASY:
 					{
-						NewGame(hwnd, pState, 9, 9, 10, 0, 0);
+						pState->NewGame(hwnd, 9, 9, 10, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_NORMAL:
 					{
-						NewGame(hwnd, pState, 16, 16, 40, 0, 0);
+						pState->NewGame(hwnd, 16, 16, 40, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_HARD:
 					{
-						NewGame(hwnd, pState, 30, 16, 99, 0, 0);
+						pState->NewGame(hwnd, 30, 16, 99, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_CUSTOM:
 					{
 						//TODO: input dialog box is needed
-						NewGame(hwnd, pState, 50, 40, 50, 0, 0);
+						pState->NewGame(hwnd, 50, 40, 500, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
@@ -193,105 +121,31 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_MOUSEMOVE:
 		{
-			pState->mouse.XP = pState->mouse.X;
-			pState->mouse.YP = pState->mouse.Y;
-			pState->mouse.X = GET_X_LPARAM(lParam);
-			pState->mouse.Y = GET_Y_LPARAM(lParam);
+			pState->OnMouseMove(lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_LBUTTONDOWN:
 		{
-			pState->mouse.LDX = GET_X_LPARAM(lParam);
-			pState->mouse.LDY = GET_Y_LPARAM(lParam);
-			if (!pState->GO && pState->mouse.LDX >= pState->grid.gx && pState->mouse.LDY >= pState->grid.gy)
-			{
-				int dx = (pState->mouse.LDX - pState->grid.gx) / pState->grid.w;
-				int dy = (pState->mouse.LDY - pState->grid.gy) / pState->grid.h;
-				if ((pState->map.FieldValue[dx][dy] & FV_Clear) != FV_Clear && (pState->map.FieldValue[dx][dy] & FV_Flag) != FV_Flag)
-				{
-					pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] | FV_Pushed;
-				}
-				RECT r = {
-					{pState->grid.gx + dx * pState->grid.w},
-					{pState->grid.gy + dy * pState->grid.h},
-					{pState->grid.gx + ++dx * pState->grid.w},
-					{pState->grid.gy + ++dy * pState->grid.h} };
-				InvalidateRect(hwnd, &r, TRUE);
-			}
+			pState->OnLeftButtonDown(hwnd, lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_LBUTTONUP:
 		{
-			pState->mouse.LUX = GET_X_LPARAM(lParam);
-			pState->mouse.LUY = GET_Y_LPARAM(lParam);
-			int ux = (pState->mouse.LUX - pState->grid.gx) / pState->grid.w;
-			int uy = (pState->mouse.LUY - pState->grid.gy) / pState->grid.h;
-			int dx = (pState->mouse.LDX - pState->grid.gx) / pState->grid.w;
-			int dy = (pState->mouse.LDY - pState->grid.gy) / pState->grid.h;
-			if (pState->mouse.LDX >= pState->grid.gx && pState->mouse.LDY >= pState->grid.gy)
-			{
-				if (pState->map.FieldValue[dx][dy] & FV_Pushed)
-				{
-					pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] ^ FV_Pushed;
-				}
-				if (pState->map.FieldValue[ux][uy] & FV_Pushed)
-				{
-					pState->map.FieldValue[ux][uy] = pState->map.FieldValue[ux][uy] ^ FV_Pushed;
-				}
-				if (dx == ux && dy == uy && (pState->map.FieldValue[ux][uy] & FV_Flag) != FV_Flag)// && !pState->GO)
-				{
-					if (pState->NG)
-					{
-						NewGame(hwnd, pState, pState->map.sizeX, pState->map.sizeY, pState->map.cMine, ux + 1, uy + 1);
-						pState->NG = false;
-					}
-					if (UnhideField(hwnd, pState, ux, uy))
-					{
-						GameOver(hwnd, pState);
-					}
-				}
-				else
-				{
-					RECT r = { {pState->grid.gx + dx * pState->grid.w},	{pState->grid.gy + dy * pState->grid.h}, {pState->grid.gx + ++dx * pState->grid.w}, {pState->grid.gy + ++dy * pState->grid.h} };
-					InvalidateRect(hwnd, &r, TRUE);
-				}
-			}
-			
+			pState->OnLeftButtonUp(hwnd, lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_RBUTTONDOWN:
 		{
-			pState->mouse.RDX = GET_X_LPARAM(lParam);
-			pState->mouse.RDY = GET_Y_LPARAM(lParam);
-			if (!pState->GO)
-			{
-				int dx = (pState->mouse.RDX - pState->grid.gx) / pState->grid.w;
-				int dy = (pState->mouse.RDY - pState->grid.gy) / pState->grid.h;
-				if (pState->map.FieldValue[dx][dy] & FV_Flag)
-				{
-					pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] ^ FV_Flag;
-				}
-				else
-				{
-					pState->map.FieldValue[dx][dy] = pState->map.FieldValue[dx][dy] | FV_Flag;
-				}
-				RECT r = {
-					{pState->grid.gx + dx * pState->grid.w},
-					{pState->grid.gy + dy * pState->grid.h},
-					{pState->grid.gx + ++dx * pState->grid.w},
-					{pState->grid.gy + ++dy * pState->grid.h} };
-				InvalidateRect(hwnd, &r, TRUE);
-			}
+			pState->OnRightButtonDown(hwnd, lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_RBUTTONUP:
 		{
-			pState->mouse.RUX = GET_X_LPARAM(lParam);
-			pState->mouse.RUY = GET_Y_LPARAM(lParam);
+			pState->OnRightButtonUp(lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
@@ -321,11 +175,45 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				HDC hdc = BeginPaint(hwnd, &ps);
 				SelectObject(hdc, GetStockObject(DC_BRUSH));
 				SelectObject(hdc, GetStockObject(DC_PEN));
+				//DrawCustomTitleBar(hwnd, hdc);
 				DrawMap(hdc, pState, hrgn);
 				EndPaint(hwnd, &ps);
 			}
 		}
 		return 0;
+		case WM_NCPAINT:
+		{
+			//DefWindowProcW(hwnd, uMsg, wParam, lParam);
+			HDC hdc = GetWindowDC(hwnd);
+			DrawCustomTitleBar(hwnd, hdc);
+			DrawCustomBorder(hwnd, hdc);
+			ReleaseDC(hwnd, hdc);
+			return 0;
+		}
+		case WM_NCACTIVATE:
+		{
+			return TRUE;
+		}
+		return 0;
+		case WM_NCLBUTTONDOWN :
+		{
+			if (wParam == HTCLOSE)
+			{
+				PostMessage(hwnd, WM_CLOSE, 0, 0);
+			}
+			else if (wParam == HTMINBUTTON)
+			{
+				ShowWindow(hwnd, SW_MINIMIZE);
+			}
+			else if (wParam == HTMAXBUTTON)
+			{
+				ShowWindow(hwnd, IsZoomed(hwnd) ? SW_RESTORE : SW_MAXIMIZE);
+			}
+			else
+			{
+				DefWindowProc(hwnd, uMsg, wParam, lParam);
+			}
+		}
 		case WM_SETCURSOR:
 		{
 			HCURSOR hc = NULL;
@@ -365,112 +253,74 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
-int NewGame(HWND hwnd, StateInfo* pState, int sizeX, int sizeY, int cMine, int clickX, int clickY)
+void DrawCustomTitleBar(HWND hwnd, HDC hdc)
 {
-	pState->GO = false;
-	pState->grid.cx = sizeX;
-	pState->grid.cy = sizeY;
-	pState->map.sizeX = sizeX;
-	pState->map.sizeY = sizeY;
-	pState->map.cMine = cMine;
-	ClearMap(pState);
-	int click = clickX * clickY;
-	int mapsize = sizeX * sizeY;
-	if (click > 1 && click < mapsize)
+	RECT rect;
+	bool chatGPTmethod = false;
+	if (chatGPTmethod)
 	{
-		long f = (mapsize - 1) / (cMine - 1);
-		int c1 = click / f;
-		if (c1 >= cMine) { c1 = cMine - 1; }
-		int c2 = cMine - c1 - 1;
-		FillMap(pState, -1, click, c1);
-		FillMap(pState, click, mapsize, c2);
+		GetWindowRect(hwnd, &rect);
+		OffsetRect(&rect, -rect.left, -rect.top);
+		rect.bottom = GetSystemMetrics(SM_CYCAPTION);
 	}
-	else if (click == 1)
+	else
 	{
-		FillMap(pState, 0, mapsize, cMine);
+		TITLEBARINFOEX titleBarInfoEx;
+		titleBarInfoEx.cbSize = sizeof(TITLEBARINFOEX);
+		SendMessageW(hwnd, WM_GETTITLEBARINFOEX, 0, (LPARAM)&titleBarInfoEx);
+		rect = titleBarInfoEx.rcTitleBar;
+		OffsetRect(&rect, -rect.left, -rect.top);
 	}
-	else if (click == mapsize)
-	{
-		FillMap(pState, -1, mapsize - 1, cMine);
-	}
-	FillMapWithNumbers(pState);
-	InvalidateRect(hwnd, NULL, TRUE);
-	return 0;
+	HBRUSH brush = CreateSolidBrush(RGB(10, 100, 10));
+	FillRect(hdc, &rect, brush);
+	DeleteObject(brush);
+
+	SetTextColor(hdc, RGB(255, 255, 255));
+	SetBkMode(hdc, TRANSPARENT);
+	DrawText(hdc, L"Minesweeper", -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	DrawCustomControlButtons(hwnd, hdc);
 }
 
-int ClearMap(StateInfo* pState)
+void DrawCustomControlButtons(HWND hwnd, HDC hdc)
 {
-	for (int i = 0; i < pState->map.sizeX; ++i)
-	{
-		for (int j = 0; j < pState->map.sizeY; ++j)
-		{
-			pState->map.FieldValue[i][j] = 0;
-		}
-	}
-	return 0;
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	OffsetRect(&rect, -rect.left, -rect.top);
+	rect.bottom = GetSystemMetrics(SM_CYCAPTION);
+
+	int buttonWidth = GetSystemMetrics(SM_CXSIZE);
+	int buttonHeight = rect.bottom;
+
+	RECT closeRect = { rect.right - buttonWidth, 0, rect.right, buttonHeight };
+	HBRUSH closeBrush = CreateSolidBrush(RGB(0, 50, 10));
+	FillRect(hdc, &closeRect, closeBrush);
+	DeleteObject(closeBrush);
+	DrawText(hdc, L"X", -1, &closeRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	RECT maxRect = { rect.right - 2 * buttonWidth, 0, rect.right - buttonWidth, buttonHeight };
+	HBRUSH maxBrush = CreateSolidBrush(RGB(20, 70, 10));
+	FillRect(hdc, &maxRect, maxBrush);
+	DeleteObject(maxBrush);
+	DrawText(hdc, L"■", -1, &maxRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	RECT minRect = { rect.right - 3 * buttonWidth, 0, rect.right - 2 * buttonWidth, buttonHeight };
+	HBRUSH minBrush = CreateSolidBrush(RGB(40, 70, 10));
+	FillRect(hdc, &minRect, minBrush);
+	DeleteObject(minBrush);
+	DrawText(hdc, L"_", -1, &minRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-int FillMap(StateInfo* pState, int a, int b, int cMine)
+void DrawCustomBorder(HWND hwnd, HDC hdc)
 {
-	int n = rand() % (b - a - 1) + a + 1;
-	int nx = n / pState->map.sizeY;
-	int ny = n % pState->map.sizeY;
-	pState->map.FieldValue[nx][ny] = pState->map.FieldValue[nx][ny] | FV_Mine;
-	if (cMine > 1)
-	{
-		long f = (b - a - 2) / (cMine - 1);
-		int c1 = (n - a - 1) / f;
-		if (c1 >= cMine) { c1 = cMine - 1; }
-		int c2 = cMine - c1 - 1;
-		if (c1) { FillMap(pState, a, n, c1); }
-		if (c2) { FillMap(pState, n, b, c2); }
-	}
-	return 0;
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	OffsetRect(&rect, -rect.left, -rect.top);
+
+	HBRUSH borderBrush = CreateSolidBrush(RGB(100, 20, 200));
+	FrameRect(hdc, &rect, borderBrush);
+	DeleteObject(borderBrush);
 }
 
-int FillMapWithNumbers(StateInfo* pState)
-{
-	int cm = 0;
-	for (int i = 0; i < pState->map.sizeX; ++i)
-	{
-		for (int j = 0; j < pState->map.sizeY; ++j)
-		{
-			cm = 0;
-			if ((pState->map.FieldValue[i][j] & FV_Mine) != FV_Mine)
-			{
-/*				if (i>0 && j>0 && pState->map.FieldValue[i - 1][j - 1] & FV_Mine) { ++cm; }
-				if (j>0 && pState->map.FieldValue[i    ][j - 1] & FV_Mine) { ++cm; }
-				if (i<pState->map.sizeX && j > 0 && pState->map.FieldValue[i + 1][j - 1] & FV_Mine) { ++cm; }
-				if (i < pState->map.sizeX && pState->map.FieldValue[i + 1][j    ] & FV_Mine) { ++cm; }
-				if (i < pState->map.sizeX && j < pState->map.sizeY && pState->map.FieldValue[i + 1][j + 1] & FV_Mine) { ++cm; }
-				if (j < pState->map.sizeY && pState->map.FieldValue[i    ][j + 1] & FV_Mine) { ++cm; }
-				if (i>0 && j < pState->map.sizeY && pState->map.FieldValue[i - 1][j + 1] & FV_Mine) { ++cm; }
-				if (i>0 && pState->map.FieldValue[i - 1][j    ] & FV_Mine) { ++cm; }*/
-				if (i>0 && j>0 && (pState->map.FieldValue[i - 1][j - 1] & FV_Mine)) { ++cm; }
-				if (j>0 && (pState->map.FieldValue[i    ][j - 1] & FV_Mine)) { ++cm; }
-				if (i<pState->map.sizeX-1 && j > 0 && (pState->map.FieldValue[i + 1][j - 1] & FV_Mine)) { ++cm; }
-				if (i < pState->map.sizeX-1 && (pState->map.FieldValue[i + 1][j    ] & FV_Mine)) { ++cm; }
-				if (i < pState->map.sizeX-1 && j < pState->map.sizeY-1 && (pState->map.FieldValue[i + 1][j + 1] & FV_Mine)) { ++cm; }
-				if (j < pState->map.sizeY-1 && (pState->map.FieldValue[i    ][j + 1] & FV_Mine)) { ++cm; }
-				if (i>0 && j < pState->map.sizeY-1 && (pState->map.FieldValue[i - 1][j + 1] & FV_Mine)) { ++cm; }
-				if (i>0 && (pState->map.FieldValue[i - 1][j    ] & FV_Mine)) { ++cm; }
-				switch (cm)
-				{
-				case 0:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_0; break;
-				case 1:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_1; break;
-				case 2:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_2; break;
-				case 3:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_3; break;
-				case 4:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_4; break;
-				case 5:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_5; break;
-				case 6:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_6; break;
-				case 7:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_7; break;
-				case 8:pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_8; break;
-				}
-			}
-		}
-	}
-	return 0;
-}
 int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 {
 	long gx = pState->grid.gx;
@@ -540,75 +390,6 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 		}
 	}
 
-	return 0;
-}
-
-int UnhideField(HWND hwnd, StateInfo* pState, int i, int j)
-{
-	if ((pState->map.FieldValue[i][j] & FV_Flag) != FV_Flag && (pState->map.FieldValue[i][j] & FV_Clear) != FV_Clear)
-	{
-		RECT r = { {pState->grid.gx + i * pState->grid.w},	{pState->grid.gy + j * pState->grid.h}, {pState->grid.gx + (i+1) * pState->grid.w}, {pState->grid.gy + (j+1) * pState->grid.h} };
-		InvalidateRect(hwnd, &r, TRUE);
-		pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_Clear;
-		if (pState->map.FieldValue[i][j] & FV_0)
-		{
-			if (i > 0)
-			{
-				UnhideField(hwnd, pState, i - 1, j);
-				if (j > 0)
-				{
-					UnhideField(hwnd, pState, i - 1, j - 1);
-				}
-			}
-			if (j > 0)
-			{
-				UnhideField(hwnd, pState, i, j - 1);
-				if (i < pState->map.sizeX)
-				{
-					UnhideField(hwnd, pState, i + 1, j - 1);
-				}
-			}
-			if (i < pState->map.sizeX)
-			{
-				UnhideField(hwnd, pState, i + 1, j);
-				if (j < pState->map.sizeY)
-				{
-					UnhideField(hwnd, pState, i + 1, j + 1);
-				}
-			}
-			if (j < pState->map.sizeY)
-			{
-				UnhideField(hwnd, pState, i, j + 1);
-				if (i > 0)
-				{
-					UnhideField(hwnd, pState, i - 1, j + 1);
-				}
-			}
-		}
-	}
-	if (pState->map.FieldValue[i][j] & FV_Mine)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-int GameOver(HWND hwnd, StateInfo* pState)
-{
-	pState->GO = true;
-	for (int i = 0; i < pState->map.sizeX; ++i)
-	{
-		for (int j = 0; j < pState->map.sizeY; ++j)
-		{
-			if (pState->map.FieldValue[i][j] & FV_Mine)
-			{
-				pState->map.FieldValue[i][j] = pState->map.FieldValue[i][j] | FV_Clear;
-				RECT r = { {pState->grid.gx + i * pState->grid.w},	{pState->grid.gy + j * pState->grid.h}, {pState->grid.gx + (i + 1) * pState->grid.w}, {pState->grid.gy + (j + 1) * pState->grid.h} };
-				InvalidateRect(hwnd, &r, TRUE);
-			}
-			UnhideField(hwnd, pState, i, j);
-		}
-	}
 	return 0;
 }
 
@@ -735,6 +516,7 @@ int debugStr(long k, int i, HDC hdc, const wchar_t* s)
 
 int debug(HWND hwnd, StateInfo* pState)
 {
+	return 0;
 	HDC hdc = GetWindowDC(hwnd);
 	SetBkColor(hdc, RGB(0, 0, 0));
 	SetTextColor(hdc, RGB(255, 255, 255));
