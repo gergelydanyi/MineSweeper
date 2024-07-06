@@ -1,4 +1,6 @@
 #include "StateInfo.h"
+#include "Field.h"
+
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
 	mouse.XP = mouse.X;
@@ -15,9 +17,9 @@ void StateInfo::OnLeftButtonDown(HWND hwnd, LPARAM lParam)
 	{
 		int dx = (mouse.LDX - grid.gx) / grid.w;
 		int dy = (mouse.LDY - grid.gy) / grid.h;
-		if ((map.FieldValue[dx][dy] & FV_Clear) != FV_Clear && (map.FieldValue[dx][dy] & FV_Flag) != FV_Flag)
+		if (!map.getField(dx, dy).isClear() && !map.getField(dx, dy).hasFlag())
 		{
-			map.FieldValue[dx][dy] = map.FieldValue[dx][dy] | FV_Pushed;
+			map.getField(dx, dy).setPushed();
 		}
 		RECT r = {
 			{grid.gx + dx * grid.w},
@@ -38,15 +40,9 @@ void StateInfo::OnLeftButtonUp(HWND hwnd, LPARAM lParam)
 	int dy = (mouse.LDY - grid.gy) / grid.h;
 	if (mouse.LDX >= grid.gx && mouse.LDY >= grid.gy)
 	{
-		if (map.FieldValue[dx][dy] & FV_Pushed)
-		{
-			map.FieldValue[dx][dy] = map.FieldValue[dx][dy] ^ FV_Pushed;
-		}
-		if (map.FieldValue[ux][uy] & FV_Pushed)
-		{
-			map.FieldValue[ux][uy] = map.FieldValue[ux][uy] ^ FV_Pushed;
-		}
-		if (dx == ux && dy == uy && (map.FieldValue[ux][uy] & FV_Flag) != FV_Flag)// && !pState->GO)
+		map.getField(dx, dy).deletePushed();
+		map.getField(ux, uy).deletePushed();
+		if (dx == ux && dy == uy && !map.getField(ux, uy).hasFlag())// && !pState->GO)
 		{
 			if (NG)
 			{
@@ -74,14 +70,7 @@ void StateInfo::OnRightButtonDown(HWND hwnd, LPARAM lParam)
 	{
 		int dx = (mouse.RDX - grid.gx) / grid.w;
 		int dy = (mouse.RDY - grid.gy) / grid.h;
-		if (map.FieldValue[dx][dy] & FV_Flag)
-		{
-			map.FieldValue[dx][dy] = map.FieldValue[dx][dy] ^ FV_Flag;
-		}
-		else
-		{
-			map.FieldValue[dx][dy] = map.FieldValue[dx][dy] | FV_Flag;
-		}
+		map.getField(dx, dy).switchFlag();
 		RECT r = {
 			{grid.gx + dx * grid.w},
 			{grid.gy + dy * grid.h},
@@ -105,7 +94,7 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	map.sizeX = sizeX;
 	map.sizeY = sizeY;
 	map.cMine = cMine;
-	ClearMap();
+	map.Clear();
 	int click = clickX * clickY;
 	int mapsize = sizeX * sizeY;
 	if (click > 1 && click < mapsize)
@@ -130,13 +119,13 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	return 0;
 }
 
-int StateInfo::ClearMap()
+int MapInfo::Clear()
 {
-	for (int i = 0; i < map.sizeX; ++i)
+	for (int i = 0; i < sizeX; ++i)
 	{
-		for (int j = 0; j < map.sizeY; ++j)
+		for (int j = 0; j < sizeY; ++j)
 		{
-			map.FieldValue[i][j] = 0;
+			getField(i, j).reset();// FieldValue[i][j] = 0;
 		}
 	}
 	return 0;
@@ -147,7 +136,7 @@ int StateInfo::FillMap(int a, int b, int cMine)
 	int n = rand() % (b - a - 1) + a + 1;
 	int nx = n / map.sizeY;
 	int ny = n % map.sizeY;
-	map.FieldValue[nx][ny] = map.FieldValue[nx][ny] | FV_Mine;
+	map.getField(nx, ny).setMine();
 	if (cMine > 1)
 	{
 		long f = (b - a - 2) / (cMine - 1);
@@ -168,27 +157,27 @@ int StateInfo::FillMapWithNumbers()
 		for (int j = 0; j < map.sizeY; ++j)
 		{
 			cm = 0;
-			if ((map.FieldValue[i][j] & FV_Mine) != FV_Mine)
+			if (!map.getField(i, j).hasMine())
 			{
-				if (i > 0 && j > 0 && (map.FieldValue[i - 1][j - 1] & FV_Mine)) { ++cm; }
-				if (j > 0 && (map.FieldValue[i][j - 1] & FV_Mine)) { ++cm; }
-				if (i < map.sizeX - 1 && j > 0 && (map.FieldValue[i + 1][j - 1] & FV_Mine)) { ++cm; }
-				if (i < map.sizeX - 1 && (map.FieldValue[i + 1][j] & FV_Mine)) { ++cm; }
-				if (i < map.sizeX - 1 && j < map.sizeY - 1 && (map.FieldValue[i + 1][j + 1] & FV_Mine)) { ++cm; }
-				if (j < map.sizeY - 1 && (map.FieldValue[i][j + 1] & FV_Mine)) { ++cm; }
-				if (i > 0 && j < map.sizeY - 1 && (map.FieldValue[i - 1][j + 1] & FV_Mine)) { ++cm; }
-				if (i > 0 && (map.FieldValue[i - 1][j] & FV_Mine)) { ++cm; }
+				if (i > 0 && j > 0 && map.getField(i - 1, j - 1).hasMine()) { ++cm; }
+				if (j > 0 && map.getField(i, j - 1).hasMine()) { ++cm; }
+				if (i < map.sizeX - 1 && j > 0 && map.getField(i + 1, j - 1).hasMine()) { ++cm; }
+				if (i < map.sizeX - 1 && map.getField(i + 1, j).hasMine()) { ++cm; }
+				if (i < map.sizeX - 1 && j < map.sizeY - 1 && map.getField(i + 1, j + 1).hasMine()) { ++cm; }
+				if (j < map.sizeY - 1 && map.getField(i, j + 1).hasMine()) { ++cm; }
+				if (i > 0 && j < map.sizeY - 1 && map.getField(i - 1, j + 1).hasMine()) { ++cm; }
+				if (i > 0 && map.getField(i - 1, j).hasMine()) { ++cm; }
 				switch (cm)
 				{
-				case 0:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_0; break;
-				case 1:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_1; break;
-				case 2:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_2; break;
-				case 3:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_3; break;
-				case 4:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_4; break;
-				case 5:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_5; break;
-				case 6:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_6; break;
-				case 7:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_7; break;
-				case 8:map.FieldValue[i][j] = map.FieldValue[i][j] | FV_8; break;
+				case 0:map.getField(i, j).set0(); break;
+				case 1:map.getField(i, j).set1(); break;
+				case 2:map.getField(i, j).set2(); break;
+				case 3:map.getField(i, j).set3(); break;
+				case 4:map.getField(i, j).set4(); break;
+				case 5:map.getField(i, j).set5(); break;
+				case 6:map.getField(i, j).set6(); break;
+				case 7:map.getField(i, j).set7(); break;
+				case 8:map.getField(i, j).set8(); break;
 				}
 			}
 		}
@@ -198,7 +187,7 @@ int StateInfo::FillMapWithNumbers()
 
 int StateInfo::UnhideField(HWND hwnd, int i, int j)
 {
-	if ((map.FieldValue[i][j] & FV_Flag) != FV_Flag && (map.FieldValue[i][j] & FV_Clear) != FV_Clear)
+	if (!map.getField(i, j).hasFlag() && !map.getField(i, j).isClear())
 	{
 		RECT r = {
 			{grid.gx + i * grid.w},
@@ -206,8 +195,8 @@ int StateInfo::UnhideField(HWND hwnd, int i, int j)
 			{grid.gx + (i + 1) * grid.w},
 			{grid.gy + (j + 1) * grid.h} };
 		InvalidateRect(hwnd, &r, TRUE);
-		map.FieldValue[i][j] = map.FieldValue[i][j] | FV_Clear;
-		if (map.FieldValue[i][j] & FV_0)
+		map.getField(i, j).setClear();
+		if (map.getField(i, j).is0())
 		{
 			if (i > 0)
 			{
@@ -243,7 +232,7 @@ int StateInfo::UnhideField(HWND hwnd, int i, int j)
 			}
 		}
 	}
-	if (map.FieldValue[i][j] & FV_Mine)
+	if (map.getField(i, j).hasMine())
 	{
 		return 1;
 	}
@@ -257,9 +246,9 @@ int StateInfo::GameOver(HWND hwnd)
 	{
 		for (int j = 0; j < map.sizeY; ++j)
 		{
-			if (map.FieldValue[i][j] & FV_Mine)
+			if (map.getField(i, j).hasMine())
 			{
-				map.FieldValue[i][j] = map.FieldValue[i][j] | FV_Clear;
+				map.getField(i, j).setClear();
 				RECT r = { {grid.gx + i * grid.w},	{grid.gy + j * grid.h}, {grid.gx + (i + 1) * grid.w}, {grid.gy + (j + 1) * grid.h} };
 				InvalidateRect(hwnd, &r, TRUE);
 			}

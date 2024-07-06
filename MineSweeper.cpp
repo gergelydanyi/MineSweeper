@@ -16,15 +16,13 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j);
 int DrawFlag(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMine(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMap(HDC hdc, StateInfo* pState, HRGN hrgn);
-//int UnhideField(HWND hwnd,StateInfo* pState, int i, int j);
-//int GameOver(HWND hwnd, StateInfo* pState);
 int debug(HWND hwnd, StateInfo* pState);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 {
 	StateInfo* pState = new StateInfo;
-	// TODO: insert ClearMap function to the constructor of StateInfo class
-	pState->ClearMap();
+	// TODO: insert Clear function to the constructor of StateInfo class
+	pState->map.Clear();
 
 	if(pState == NULL)
 	{
@@ -111,7 +109,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					case ID_NEW_CUSTOM:
 					{
 						//TODO: input dialog box is needed
-						pState->NewGame(hwnd, 50, 40, 500, 0, 0);
+						pState->NewGame(hwnd, 90, 50, 500, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
@@ -327,17 +325,17 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 	long gy = pState->grid.gy;
 	int w = pState->grid.w;
 	int h = pState->grid.h;
-	if (pState->map.FieldValue[i][j] & FV_Pushed)						//button pushed
+	if (pState->map.getField(i, j).isPushed())						//button pushed
 	{
 		SetDCBrushColor(hdc, clr_GridBack);
 		SetDCPenColor(hdc, clr_GridLine);
 		Rectangle(hdc, gx + i * w, gy + j * h, gx + i * w + w + 1, gy + j * h + h + 1);
 	}
-	else if (pState->map.FieldValue[i][j] & FV_Clear)					//unhidden area
+	else if (pState->map.getField(i, j).isClear())					//unhidden area
 	{
 			SetDCBrushColor(hdc, clr_GridBack);
 			SetDCPenColor(hdc, clr_GridLine);
-			if (pState->map.FieldValue[i][j] & FV_Mine && !pState->GO)	//there is a mine
+			if (pState->map.getField(i, j).hasMine() && !pState->GO)	//there is a mine
 			{
 				SetDCBrushColor(hdc, clr_MineBackGO);
 				SetDCPenColor(hdc, clr_MineBackGO);
@@ -348,15 +346,15 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 			TEXTMETRICW tm;
 			GetTextMetricsW(hdc, &tm);
 			int dx = 10, dy = 10 - tm.tmHeight / 2;
-			if (pState->map.FieldValue[i][j] & FV_1) { SetTextColor(hdc, clr_1); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"1", 1); }
-			if (pState->map.FieldValue[i][j] & FV_2) { SetTextColor(hdc, clr_2); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"2", 1); }
-			if (pState->map.FieldValue[i][j] & FV_3) { SetTextColor(hdc, clr_3); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"3", 1); }
-			if (pState->map.FieldValue[i][j] & FV_4) { SetTextColor(hdc, clr_4); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"4", 1); }
-			if (pState->map.FieldValue[i][j] & FV_5) { SetTextColor(hdc, clr_5); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"5", 1); }
-			if (pState->map.FieldValue[i][j] & FV_6) { SetTextColor(hdc, clr_6); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"6", 1); }
-			if (pState->map.FieldValue[i][j] & FV_7) { SetTextColor(hdc, clr_7); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"7", 1); }
-			if (pState->map.FieldValue[i][j] & FV_8) { SetTextColor(hdc, clr_8); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"8", 1); }
-			if (pState->map.FieldValue[i][j] & FV_Mine)
+			if (pState->map.getField(i, j).is1()) { SetTextColor(hdc, clr_1); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"1", 1); }
+			if (pState->map.getField(i, j).is2()) { SetTextColor(hdc, clr_2); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"2", 1); }
+			if (pState->map.getField(i, j).is3()) { SetTextColor(hdc, clr_3); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"3", 1); }
+			if (pState->map.getField(i, j).is4()) { SetTextColor(hdc, clr_4); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"4", 1); }
+			if (pState->map.getField(i, j).is5()) { SetTextColor(hdc, clr_5); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"5", 1); }
+			if (pState->map.getField(i, j).is6()) { SetTextColor(hdc, clr_6); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"6", 1); }
+			if (pState->map.getField(i, j).is7()) { SetTextColor(hdc, clr_7); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"7", 1); }
+			if (pState->map.getField(i, j).is8()) { SetTextColor(hdc, clr_8); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"8", 1); }
+			if (pState->map.getField(i, j).hasMine())
 			{
 				DrawMine(hdc, pState, i, j);
 			}
@@ -384,7 +382,7 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 		SetDCPenColor(hdc, clr_BtnFace);
 		int border = 2;
 		Rectangle(hdc, gx + i * w + border, gy + j * h + border, gx + i * w + w - border, gy + j * h + h - border);
-		if ((pState->map.FieldValue[i][j] & FV_Flag) == FV_Flag)
+		if (pState->map.getField(i, j).hasFlag())
 		{
 			DrawFlag(hdc, pState, i, j);
 		}

@@ -5,3 +5,5 @@
 /x64/Debug
 /MineSweeper/x64/Debug
 /.vs/MineSweeper
+/.vs
+/MineSweeper.aps
