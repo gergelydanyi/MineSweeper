@@ -120,27 +120,6 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	return 0;
 }
 
-MapInfo::MapInfo()
-{
-	int i = 0;
-	for (auto field : fields)
-	{
-		field->v = ++i;
-	}
-}
-
-int MapInfo::Clear()
-{
-	for (int i = 0; i < sizeX; ++i)
-	{
-		for (int j = 0; j < sizeY; ++j)
-		{
-			getField(i, j).reset();// FieldValue[i][j] = 0;
-		}
-	}
-	return 0;
-}
-
 int StateInfo::FillMap(int a, int b, int cMine)
 {
 	int n = rand() % (b - a - 1) + a + 1;
