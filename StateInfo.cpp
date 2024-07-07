@@ -119,6 +119,15 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	return 0;
 }
 
+MapInfo::MapInfo()
+{
+	int i = 0;
+	for (auto field : fields)
+	{
+		field->v = ++i;
+	}
+}
+
 int MapInfo::Clear()
 {
 	for (int i = 0; i < sizeX; ++i)
