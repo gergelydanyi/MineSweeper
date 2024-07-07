@@ -1,24 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <windowsx.h>
-
-// Field value constants for individual areas on gameboard
-
-constexpr auto FV_Mine = 0x0001;									// A mine is on the field
-constexpr auto FV_Flag = 0x0002;									// The field is suggested to contain mine, a flag is drawn after right click
-constexpr auto FV_Ask = 0x0004;									// Question mark is drawn after second right click (not yet ready)
-constexpr auto FV_0 = 0x0008;									// There is no mine in the surrounding fields
-constexpr auto FV_1 = 0x0010;									// There is 1 mine in the surrounding fields
-constexpr auto FV_2 = 0x0020;									// ...
-constexpr auto FV_3 = 0x0040;									// And so on ...
-constexpr auto FV_4 = 0x0080;									// ...
-constexpr auto FV_5 = 0x0100;									//
-constexpr auto FV_6 = 0x0200;									// There's six ...
-constexpr auto FV_7 = 0x0400;									// ...
-constexpr auto FV_8 = 0x0800;									// All of the surrounding fields contain a mine
-constexpr auto FV_Clear = 0x1000;									// Field is cleared, wheter is contains mine or not
-constexpr auto FV_Change = 0x2000;									// Not used anymore
-constexpr auto FV_Pushed = 0x4000;									// Indicates if left button is down on a field
+#include "Field.h"
 
 // Color constants
 
@@ -48,26 +31,32 @@ constexpr auto clr_Flagstaff = RGB(0, 0, 0);
 
 constexpr auto tmr_GameTime = 1;
 
-// This struct comprises information about the gameboard and its fields
-struct MapInfo
+// This class comprises information about the gameboard and its fields
+class MapInfo
 {
+public:
+	int Clear();
+	Field& getField(short int x, short int y) { return field[x][y]; }
 	const int Xmax = 100;
 	const int Ymax = 100;
 	int sizeX = 15;														// Horizontal size of gameboard
 	int sizeY = 20;														// Vertical size of gameboard
 	int cMine = 10;														// Number of mines on gameboard
-	short int FieldValue[100][100] = {};								// This array comprises flags for each field on the gameboard
+private:
+	Field field[100][100];
 };
 
-// This struct is responsible for graphical sizeing of gameboard
-struct GridInfo
+// This class is responsible for graphical sizeing of gameboard
+class GridInfo
 {
+public:
 	long gx = 20, gy = 40;												// upper left coordinates of the gameboard
 	int cx = 15, cy = 20, w = 20, h = 20;;
 };
-// This struct stores mouse pointer coordinates in different states of mouse (Left, Right, Up, Down and Previous and Current coordinates)
-struct MouseInfo
+// This class stores mouse pointer coordinates in different states of mouse (Left, Right, Up, Down and Previous and Current coordinates)
+class MouseInfo
 {
+public:
 	long LDX = 0,
 		 LDY = 0,
 		 LUX = 0,
@@ -98,7 +87,6 @@ public:
 	void OnRightButtonDown(HWND hwnd, LPARAM lParam);
 	void OnRightButtonUp(LPARAM lParam);
 	int NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, int clickY);
-	int ClearMap();
 	int FillMap(int a, int b, int cMine);
 	int FillMapWithNumbers();
 	int UnhideField(HWND hwnd, int i, int j);
