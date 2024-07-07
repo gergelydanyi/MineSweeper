@@ -26,11 +26,7 @@ public:
 	Field(int value) { Value = value; }
 
 	bool hasMine() { return Value & FV_Mine; }
-	void setMine() {
-		int x = Value;
-		x |= FV_Mine;
-		Value = x;
-		Value |= FV_Mine; }
+	void setMine() { Value |= FV_Mine; }
 	bool hasFlag() { return Value & FV_Flag; }
 	void switchFlag() { Value ^= FV_Flag; }
 	bool isClear() { return Value & FV_Clear; }
@@ -57,10 +53,21 @@ public:
 	void set7() { Value |= FV_7; }
 	void set8() { Value |= FV_8; }
 	void reset() { Value = 0; }
-
+	Field& Right() { return *Neighbours[0]; }
+	Field& RightBottom() { return *Neighbours[1]; }
+	Field& Bottom() { return *Neighbours[2]; }
+	Field& BottomLeft() { return *Neighbours[3]; }
+	Field& Left() { return *Neighbours[4]; }
+	Field& LeftTop() { return *Neighbours[5]; }
+	Field& Top() { return *Neighbours[6]; }
+	Field& TopRight() { return *Neighbours[7]; }
+	short int v = 0;
 private:
 
+	Field* Neighbours[8];
 	short int Value;
+	// Coordinates in the board:
+	int X, Y;
 
 };
 

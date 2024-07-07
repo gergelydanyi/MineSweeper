@@ -140,11 +140,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Field.cpp" />
+    <ClCompile Include="MapInfo.cpp" />
     <ClCompile Include="MineSweeper.cpp" />
     <ClCompile Include="StateInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Field.h" />
+    <ClInclude Include="MapInfo.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="StateInfo.h" />
   </ItemGroup>
