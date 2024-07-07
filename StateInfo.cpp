@@ -1,5 +1,6 @@
 #include "StateInfo.h"
-#include "Field.h"
+#include "MapInfo.h"
+//#include "Field.h"
 
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
