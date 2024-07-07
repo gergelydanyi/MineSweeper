@@ -1,5 +1,6 @@
 #include "StateInfo.h"
-#include "Field.h"
+#include "MapInfo.h"
+//#include "Field.h"
 
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
@@ -116,18 +117,6 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	}
 	FillMapWithNumbers();
 	InvalidateRect(hwnd, NULL, TRUE);
-	return 0;
-}
-
-int MapInfo::Clear()
-{
-	for (int i = 0; i < sizeX; ++i)
-	{
-		for (int j = 0; j < sizeY; ++j)
-		{
-			getField(i, j).reset();// FieldValue[i][j] = 0;
-		}
-	}
 	return 0;
 }
 
