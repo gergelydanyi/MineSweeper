@@ -1,6 +1,64 @@
 #include "StateInfo.h"
 #include "MapInfo.h"
-//#include "Field.h"
+
+GridInfo::GridInfo()
+{
+	gx = 20;
+	gy = 40;
+}
+
+RECT GridInfo::GetRect(Coordinate c)
+{
+	long A = gx + c.X * w;
+	long B = gy + c.Y * h;
+	long C = A + w;
+	long D = B + h;
+	RECT r = { A, B, C, D };
+	return r;
+}
+
+RECT GridInfo::GetRect(int x, int y)
+{
+	Coordinate c = { x, y };
+	return GetRect(c);
+}
+
+StateInfo::StateInfo()
+{
+	map.Parent = this;
+	map.Clear();
+}
+
+void StateInfo::InvalidateMap()
+{
+	RECT r_out = {};
+	RECT r_1 = {};
+	RECT r_2 = {};
+	for (int i = 0; i < map.sizeX; ++i)
+	{
+		for (int j = 0; j < map.sizeY; ++j)
+		{
+			if (map(i, j).Changed())
+			{
+				Coordinate c = { i, j };
+				r_2 = grid.GetRect(c);
+				if (IsRectEmpty(&r_1))
+				{
+					r_1 = r_2;
+				}
+				UnionRect(&r_out, &r_1, &r_2);
+				r_1 = r_out;
+			}
+		}
+	}
+	InvalidateRect(mainWindow, &r_out, TRUE);
+}
+
+void StateInfo::MapChanged(Coordinate c)
+{
+	RECT r = grid.GetRect(c);
+	InvalidateRect(mainWindow, &r, TRUE);
+}
 
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
@@ -18,16 +76,7 @@ void StateInfo::OnLeftButtonDown(HWND hwnd, LPARAM lParam)
 	{
 		int dx = (mouse.LDX - grid.gx) / grid.w;
 		int dy = (mouse.LDY - grid.gy) / grid.h;
-		if (!map.getField(dx, dy).isClear() && !map.getField(dx, dy).hasFlag())
-		{
-			map.getField(dx, dy).setPushed();
-		}
-		RECT r = {
-			{grid.gx + dx * grid.w},
-			{grid.gy + dy * grid.h},
-			{grid.gx + ++dx * grid.w},
-			{grid.gy + ++dy * grid.h} };
-		InvalidateRect(hwnd, &r, TRUE);
+		map(dx, dy).Push();
 	}
 }
 
@@ -41,43 +90,37 @@ void StateInfo::OnLeftButtonUp(HWND hwnd, LPARAM lParam)
 	int dy = (mouse.LDY - grid.gy) / grid.h;
 	if (mouse.LDX >= grid.gx && mouse.LDY >= grid.gy)
 	{
-		map.getField(dx, dy).deletePushed();
-		map.getField(ux, uy).deletePushed();
-		if (dx == ux && dy == uy && !map.getField(ux, uy).hasFlag())// && !pState->GO)
+		map(dx, dy).Release();
+		map(ux, uy).Release();
+		if (dx == ux && dy == uy && !map(ux, uy).hasFlag())// && !pState->GO)
 		{
 			if (NG)
 			{
 				NewGame(hwnd, map.sizeX, map.sizeY, map.cMine, ux + 1, uy + 1);
 				NG = false;
 			}
-			if (UnhideField(hwnd, ux, uy))
+			if (map(ux, uy).Reveal())
 			{
 				GameOver(hwnd);
 			}
-		}
-		else
-		{
-			RECT r = { {grid.gx + dx * grid.w},	{grid.gy + dy * grid.h}, {grid.gx + ++dx * grid.w}, {grid.gy + ++dy * grid.h} };
-			InvalidateRect(hwnd, &r, TRUE);
+			if (map(ux, uy).SurroundingFlags() == map(ux, uy).SurroundingMines())
+			{
+				map(ux, uy).RevealNeighbours();
+			}
 		}
 	}
+	InvalidateMap();
 }
 
 void StateInfo::OnRightButtonDown(HWND hwnd, LPARAM lParam)
 {
 	mouse.RDX = GET_X_LPARAM(lParam);
 	mouse.RDY = GET_Y_LPARAM(lParam);
-	if (!GO)
+	if (!GO && mouse.RDX >= grid.gx && mouse.RDY >= grid.gy)
 	{
 		int dx = (mouse.RDX - grid.gx) / grid.w;
 		int dy = (mouse.RDY - grid.gy) / grid.h;
-		map.getField(dx, dy).switchFlag();
-		RECT r = {
-			{grid.gx + dx * grid.w},
-			{grid.gy + dy * grid.h},
-			{grid.gx + ++dx * grid.w},
-			{grid.gy + ++dy * grid.h} };
-		InvalidateRect(hwnd, &r, TRUE);
+		map(dx, dy).switchFlag();
 	}
 }
 
@@ -96,6 +139,7 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	map.sizeY = sizeY;
 	map.cMine = cMine;
 	map.Clear();
+	map.Init();
 	int click = clickX * clickY;
 	int mapsize = sizeX * sizeY;
 	if (click > 1 && click < mapsize)
@@ -115,8 +159,7 @@ int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, i
 	{
 		FillMap(-1, mapsize - 1, cMine);
 	}
-	FillMapWithNumbers();
-	InvalidateRect(hwnd, NULL, TRUE);
+	InvalidateRect(mainWindow, NULL, TRUE);
 	return 0;
 }
 
@@ -125,7 +168,7 @@ int StateInfo::FillMap(int a, int b, int cMine)
 	int n = rand() % (b - a - 1) + a + 1;
 	int nx = n / map.sizeY;
 	int ny = n % map.sizeY;
-	map.getField(nx, ny).setMine();
+	map(nx, ny).setMine();
 	if (cMine > 1)
 	{
 		long f = (b - a - 2) / (cMine - 1);
@@ -138,111 +181,18 @@ int StateInfo::FillMap(int a, int b, int cMine)
 	return 0;
 }
 
-int StateInfo::FillMapWithNumbers()
-{
-	int cm = 0;
-	for (int i = 0; i < map.sizeX; ++i)
-	{
-		for (int j = 0; j < map.sizeY; ++j)
-		{
-			cm = 0;
-			if (!map.getField(i, j).hasMine())
-			{
-				if (i > 0 && j > 0 && map.getField(i - 1, j - 1).hasMine()) { ++cm; }
-				if (j > 0 && map.getField(i, j - 1).hasMine()) { ++cm; }
-				if (i < map.sizeX - 1 && j > 0 && map.getField(i + 1, j - 1).hasMine()) { ++cm; }
-				if (i < map.sizeX - 1 && map.getField(i + 1, j).hasMine()) { ++cm; }
-				if (i < map.sizeX - 1 && j < map.sizeY - 1 && map.getField(i + 1, j + 1).hasMine()) { ++cm; }
-				if (j < map.sizeY - 1 && map.getField(i, j + 1).hasMine()) { ++cm; }
-				if (i > 0 && j < map.sizeY - 1 && map.getField(i - 1, j + 1).hasMine()) { ++cm; }
-				if (i > 0 && map.getField(i - 1, j).hasMine()) { ++cm; }
-				switch (cm)
-				{
-				case 0:map.getField(i, j).set0(); break;
-				case 1:map.getField(i, j).set1(); break;
-				case 2:map.getField(i, j).set2(); break;
-				case 3:map.getField(i, j).set3(); break;
-				case 4:map.getField(i, j).set4(); break;
-				case 5:map.getField(i, j).set5(); break;
-				case 6:map.getField(i, j).set6(); break;
-				case 7:map.getField(i, j).set7(); break;
-				case 8:map.getField(i, j).set8(); break;
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-int StateInfo::UnhideField(HWND hwnd, int i, int j)
-{
-	if (!map.getField(i, j).hasFlag() && !map.getField(i, j).isClear())
-	{
-		RECT r = {
-			{grid.gx + i * grid.w},
-			{grid.gy + j * grid.h},
-			{grid.gx + (i + 1) * grid.w},
-			{grid.gy + (j + 1) * grid.h} };
-		InvalidateRect(hwnd, &r, TRUE);
-		map.getField(i, j).setClear();
-		if (map.getField(i, j).is0())
-		{
-			if (i > 0)
-			{
-				UnhideField(hwnd, i - 1, j);
-				if (j > 0)
-				{
-					UnhideField(hwnd, i - 1, j - 1);
-				}
-			}
-			if (j > 0)
-			{
-				UnhideField(hwnd, i, j - 1);
-				if (i < map.sizeX)
-				{
-					UnhideField(hwnd, i + 1, j - 1);
-				}
-			}
-			if (i < map.sizeX)
-			{
-				UnhideField(hwnd, i + 1, j);
-				if (j < map.sizeY)
-				{
-					UnhideField(hwnd, i + 1, j + 1);
-				}
-			}
-			if (j < map.sizeY)
-			{
-				UnhideField(hwnd, i, j + 1);
-				if (i > 0)
-				{
-					UnhideField(hwnd, i - 1, j + 1);
-				}
-			}
-		}
-	}
-	if (map.getField(i, j).hasMine())
-	{
-		return 1;
-	}
-	return 0;
-}
-
-int StateInfo::GameOver(HWND hwnd)
+void StateInfo::GameOver(HWND hwnd)
 {
 	GO = true;
 	for (int i = 0; i < map.sizeX; ++i)
 	{
 		for (int j = 0; j < map.sizeY; ++j)
 		{
-			if (map.getField(i, j).hasMine())
+			if (map(i, j).hasMine())
 			{
-				map.getField(i, j).setClear();
-				RECT r = { {grid.gx + i * grid.w},	{grid.gy + j * grid.h}, {grid.gx + (i + 1) * grid.w}, {grid.gy + (j + 1) * grid.h} };
-				InvalidateRect(hwnd, &r, TRUE);
+				map(i, j).setClear();
 			}
-			UnhideField(hwnd, i, j);
+			map(i, j).Reveal(false);
 		}
 	}
-	return 0;
 }

@@ -6,13 +6,15 @@
 #include <windowsx.h>
 #include "resource.h"
 #include <string>
+#include <time.h>
 #include "StateInfo.h"
 
 LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void DrawCustomTitleBar(HWND hwnd, HDC hdc);
 void DrawCustomControlButtons(HWND hwnd, HDC hdc);
 void DrawCustomBorder(HWND hwnd, HDC hdc);
-int DrawField(HDC hdc, StateInfo* pState, int i, int j);
+void InvalidateNeighbourhood(HWND, LPARAM, StateInfo*);
+int DrawField(HDC hdc, StateInfo* pState, int i, int j, bool cascade = true);
 int DrawFlag(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMine(HDC hdc, StateInfo* pState, int i, int j);
 int DrawMap(HDC hdc, StateInfo* pState, HRGN hrgn);
@@ -20,9 +22,9 @@ int debug(HWND hwnd, StateInfo* pState);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 {
+	srand(time(0));
 	StateInfo* pState = new StateInfo;
-	// TODO: insert Clear function to the constructor of StateInfo class
-	pState->map.Clear();
+	// DONE: insert Clear function to the constructor of StateInfo class
 
 	if(pState == NULL)
 	{
@@ -49,6 +51,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR cmdLine, int nCmdShow)
 		CW_USEDEFAULT, CW_USEDEFAULT, 235, 290,
 		NULL, NULL, hInstance, pState
 	);
+	pState->mainWindow = hWnd;
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -109,7 +112,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					case ID_NEW_CUSTOM:
 					{
 						//TODO: input dialog box is needed
-						pState->NewGame(hwnd, 90, 50, 500, 0, 0);
+						pState->NewGame(hwnd, 90, 50, 350, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
@@ -138,6 +141,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case WM_RBUTTONDOWN:
 		{
 			pState->OnRightButtonDown(hwnd, lParam);
+			InvalidateNeighbourhood(hwnd, lParam, pState);
 			debug(hwnd, pState);
 		}
 		return 0;
@@ -165,17 +169,32 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT ps;
-			HRGN hrgn = NULL;
-			if (GetUpdateRect(hwnd, NULL, FALSE))
+			//RECT UpdateRect = {};
+			//BOOL GetUpdateRectReturnValue = GetUpdateRect(hwnd, &UpdateRect, FALSE);
+			BOOL GetUpdateRectReturnValue = GetUpdateRect(hwnd, NULL, FALSE);
+			if (GetUpdateRectReturnValue)
 			{
-				GetUpdateRgn(hwnd, hrgn, FALSE);
-				HDC hdc = BeginPaint(hwnd, &ps);
-				SelectObject(hdc, GetStockObject(DC_BRUSH));
-				SelectObject(hdc, GetStockObject(DC_PEN));
-				//DrawCustomTitleBar(hwnd, hdc);
-				DrawMap(hdc, pState, hrgn);
-				EndPaint(hwnd, &ps);
+				PAINTSTRUCT ps;
+				HRGN hrgn = CreateRectRgn(0, 0, 0, 0);
+				int GetUpdateRgnReturnValue = GetUpdateRgn(hwnd, hrgn, TRUE);
+				switch (GetUpdateRgnReturnValue)
+				{
+				case COMPLEXREGION:
+					break;
+				case ERROR:
+					break;
+				case NULLREGION:
+					break;
+				case SIMPLEREGION:
+					HDC hdc = BeginPaint(hwnd, &ps);
+					SelectObject(hdc, GetStockObject(DC_BRUSH));
+					SelectObject(hdc, GetStockObject(DC_PEN));
+					//DrawCustomTitleBar(hwnd, hdc);
+					DrawMap(hdc, pState, hrgn);
+					EndPaint(hwnd, &ps);
+					break;
+				}
+				DeleteObject(hrgn);
 			}
 		}
 		return 0;
@@ -186,8 +205,8 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			DrawCustomTitleBar(hwnd, hdc);
 			DrawCustomBorder(hwnd, hdc);
 			ReleaseDC(hwnd, hdc);
-			return 0;
 		}
+		return 0;
 		case WM_NCACTIVATE:
 		{
 			return TRUE;
@@ -212,6 +231,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				DefWindowProc(hwnd, uMsg, wParam, lParam);
 			}
 		}
+		return 0;
 		case WM_SETCURSOR:
 		{
 			HCURSOR hc = NULL;
@@ -319,42 +339,69 @@ void DrawCustomBorder(HWND hwnd, HDC hdc)
 	DeleteObject(borderBrush);
 }
 
-int DrawField(HDC hdc, StateInfo* pState, int i, int j)
+void InvalidateNeighbourhood(HWND hwnd, LPARAM lParam, StateInfo* pState)
+{
+	long mouseX = GET_X_LPARAM(lParam);
+	long mouseY = GET_Y_LPARAM(lParam);
+	int x = (mouseX - pState->grid.gx) / pState->grid.w;
+	int y = (mouseY - pState->grid.gy) / pState->grid.h;
+	Field& field = pState->map(x, y);
+	for (Field* f : field.Neighbours())
+	{
+		RECT r = pState->grid.GetRect(f->X, f->Y);
+		InvalidateRect(hwnd, &r, TRUE);
+	}
+}
+
+int DrawField(HDC hdc, StateInfo* pState, int i, int j, bool cascade)
 {
 	long gx = pState->grid.gx;
 	long gy = pState->grid.gy;
 	int w = pState->grid.w;
 	int h = pState->grid.h;
-	if (pState->map.getField(i, j).isPushed())						//button pushed
+	if (pState->map(i, j).isPushed())						//button pushed
 	{
 		SetDCBrushColor(hdc, clr_GridBack);
 		SetDCPenColor(hdc, clr_GridLine);
 		Rectangle(hdc, gx + i * w, gy + j * h, gx + i * w + w + 1, gy + j * h + h + 1);
 	}
-	else if (pState->map.getField(i, j).isClear())					//unhidden area
+	else if (pState->map(i, j).isClear())					//unhidden area
 	{
 			SetDCBrushColor(hdc, clr_GridBack);
 			SetDCPenColor(hdc, clr_GridLine);
-			if (pState->map.getField(i, j).hasMine() && !pState->GO)	//there is a mine
+			SetBkColor(hdc, clr_GridBack);
+			if (pState->map(i, j).hasMine() && !pState->GO)	//there is a mine
 			{
 				SetDCBrushColor(hdc, clr_MineBackGO);
 				SetDCPenColor(hdc, clr_MineBackGO);
 			}
+			else if (pState->map(i, j).SurroundingFlags() < pState->map(i, j).SurroundingMines())
+			{
+				SetDCBrushColor(hdc, clr_GridBackRed);
+				SetBkColor(hdc, clr_GridBackRed);
+			}
+			else if (pState->map(i, j).SurroundingFlags() == pState->map(i, j).SurroundingMines())
+			{
+				SetDCBrushColor(hdc, clr_GridBackGreen);
+				SetBkColor(hdc, clr_GridBackGreen);
+			}
+			else
+			{
+				SetDCBrushColor(hdc, clr_GridBackBlue);
+				SetBkColor(hdc, clr_GridBackBlue);
+			}
 			Rectangle(hdc, gx + i * w, gy + j * h, gx + i * w + w, gy + j * h + h);
-			SetBkColor(hdc, clr_GridBack);
 			SetTextAlign(hdc, TA_CENTER);
 			TEXTMETRICW tm;
 			GetTextMetricsW(hdc, &tm);
 			int dx = 10, dy = 10 - tm.tmHeight / 2;
-			if (pState->map.getField(i, j).is1()) { SetTextColor(hdc, clr_1); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"1", 1); }
-			if (pState->map.getField(i, j).is2()) { SetTextColor(hdc, clr_2); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"2", 1); }
-			if (pState->map.getField(i, j).is3()) { SetTextColor(hdc, clr_3); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"3", 1); }
-			if (pState->map.getField(i, j).is4()) { SetTextColor(hdc, clr_4); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"4", 1); }
-			if (pState->map.getField(i, j).is5()) { SetTextColor(hdc, clr_5); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"5", 1); }
-			if (pState->map.getField(i, j).is6()) { SetTextColor(hdc, clr_6); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"6", 1); }
-			if (pState->map.getField(i, j).is7()) { SetTextColor(hdc, clr_7); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"7", 1); }
-			if (pState->map.getField(i, j).is8()) { SetTextColor(hdc, clr_8); TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, L"8", 1); }
-			if (pState->map.getField(i, j).hasMine())
+			short mines = pState->map(i, j).SurroundingMines();
+			if (mines > 0)
+			{
+				SetTextColor(hdc, pState->colors[mines - 1]);
+				TextOutW(hdc, gx + dx + i * w, gy + dy + j * h, (LPCWSTR)pState->fieldTexts[mines - 1], 1);
+			}
+			if (pState->map(i, j).hasMine())
 			{
 				DrawMine(hdc, pState, i, j);
 			}
@@ -382,7 +429,7 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j)
 		SetDCPenColor(hdc, clr_BtnFace);
 		int border = 2;
 		Rectangle(hdc, gx + i * w + border, gy + j * h + border, gx + i * w + w - border, gy + j * h + h - border);
-		if (pState->map.getField(i, j).hasFlag())
+		if (pState->map(i, j).hasFlag())
 		{
 			DrawFlag(hdc, pState, i, j);
 		}
@@ -471,25 +518,27 @@ int DrawMap(HDC hdc, StateInfo* pState, HRGN hrgn)
 	int cy = pState->grid.cy;
 	int w = pState->grid.w;
 	int h = pState->grid.h;
-	HRGN hrgnDst = NULL;
+	HRGN hrgnDst = CreateRectRgn(0, 0, 0, 0);
 	HRGN hrgnSrc1 = hrgn;
-	HRGN hrgnSrc2;
+	HRGN hrgnSrc2 = CreateRectRgn(0, 0, 0, 0);
 	for (int j = 0; j < cy; ++j)
 	{
 		for (int i = 0; i < cx; ++i)
 		{
-			hrgnSrc2 = CreateRectRgn(
+			SetRectRgn(
+				hrgnSrc2,
 				gx + i * w,
 				gy + j * h,
 				gx + i * w + w,
 				gy + j * h + h);
-			if (CombineRgn(hrgnDst, hrgnSrc1, hrgnSrc2, RGN_AND) != NULLREGION)
+			if (CombineRgn(hrgnDst, hrgnSrc1, hrgnSrc2, RGN_AND) == SIMPLEREGION)
 			{
 				DrawField(hdc, pState, i, j);
 			}
-			DeleteObject(hrgnSrc2);
 		}
 	}
+	DeleteObject(hrgnSrc2);
+	DeleteObject(hrgnDst);
 	return 0;
 }
 
@@ -544,7 +593,7 @@ int debug(HWND hwnd, StateInfo* pState)
 	SetTextColor(hdc, RGB(0, 0, 0)); SetBkColor(hdc, RGB(220, 220, 220)); debugStr(7, 18, hdc, L"7: ");
 	SetTextColor(hdc, RGB(155, 155, 155)); SetBkColor(hdc, RGB(220, 220, 220)); debugStr(8, 19, hdc, L"8: ");
 	//SetTextColor(hdc, RGB(255, 255, 255)); SetBkColor(hdc, RGB(0, 0, 0)); debugStr(pState->map.FieldValue[0][0] & FV_Pushed, 20, hdc, L"Field[0][0] | FV_Pushed: ");
-	//SetTextColor(hdc, RGB(255, 255, 255)); SetBkColor(hdc, RGB(0, 0, 0)); debugStr(pState->map.FieldValue[0][0] & FV_Clear, 21, hdc, L"Field[0][0] | FV_Clear: ");
+	//SetTextColor(hdc, RGB(255, 255, 255)); SetBkColor(hdc, RGB(0, 0, 0)); debugStr(pState->map.FieldValue[0][0] & FV_Unhidden, 21, hdc, L"Field[0][0] | FV_Unhidden: ");
 
 	ReleaseDC(hwnd, hdc);
 	return 0;
