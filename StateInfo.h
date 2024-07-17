@@ -2,7 +2,6 @@
 #include <Windows.h>
 #include <windowsx.h>
 #include "MapInfo.h"
-//#include "Field.h"
 
 // Color constants
 
@@ -18,6 +17,9 @@ constexpr auto clr_8 = RGB(155, 155, 155);;
 constexpr auto clr_GridLine = RGB(90, 90, 90);
 //constexpr auto clr_GridBack = RGB(200, 200, 200);
 constexpr auto clr_GridBack = RGB(100, 100, 100);
+constexpr auto clr_GridBackGreen = RGB(30, 100, 50);
+constexpr auto clr_GridBackRed = RGB(100, 50, 30);
+constexpr auto clr_GridBackBlue = RGB(50, 30, 100);
 //constexpr auto clr_BtnLightEdge = RGB(255, 255, 255);
 constexpr auto clr_BtnLightEdge = RGB(130, 130, 130);
 //constexpr auto clr_BtnDarkEdge = RGB(160, 160, 160);
@@ -36,8 +38,12 @@ constexpr auto tmr_GameTime = 1;
 class GridInfo
 {
 public:
-	long gx = 20, gy = 40;												// upper left coordinates of the gameboard
-	int cx = 15, cy = 20, w = 20, h = 20;;
+	GridInfo();
+	long gx;
+	long gy;												// upper left coordinates of the gameboard
+	int cx = 15, cy = 20, w = 20, h = 20;
+	RECT GetRect(Coordinate);
+	RECT GetRect(int, int);
 };
 // This class stores mouse pointer coordinates in different states of mouse (Left, Right, Up, Down and Previous and Current coordinates)
 class MouseInfo
@@ -60,9 +66,14 @@ public:
 class StateInfo
 {
 public:
+	StateInfo();
+	void InvalidateMap();
+	void MapChanged(Coordinate);
 	GridInfo grid;
 	MapInfo map;
 	MouseInfo mouse;
+	COLORREF colors[8] = {clr_1, clr_2, clr_3, clr_4, clr_5, clr_6, clr_7, clr_8};
+	LPCWSTR fieldTexts[8] = {L"1", L"2", L"3", L"4", L"5", L"6", L"7", L"8"};
 	bool GO = false;													// Is game over?
 	bool DEBUG = true;													// Debugging mode is currently ON
 	bool NG = true;														// New game until first left click on game board
@@ -74,8 +85,7 @@ public:
 	void OnRightButtonUp(LPARAM lParam);
 	int NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, int clickY);
 	int FillMap(int a, int b, int cMine);
-	int FillMapWithNumbers();
-	int UnhideField(HWND hwnd, int i, int j);
-	int GameOver(HWND hwnd);
+	void GameOver(HWND hwnd);
+	HWND mainWindow = 0;
 };
 

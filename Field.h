@@ -1,73 +1,94 @@
 #pragma once
-
+#include <vector>
 // Field value constants for individual areas on gameboard
 
 constexpr auto FV_Mine = 0x0001;									// A mine is on the field
 constexpr auto FV_Flag = 0x0002;									// The field is suggested to contain mine, a flag is drawn after right click
 constexpr auto FV_Ask = 0x0004;									// Question mark is drawn after second right click (not yet ready)
-constexpr auto FV_0 = 0x0008;									// There is no mine in the surrounding fields
-constexpr auto FV_1 = 0x0010;									// There is 1 mine in the surrounding fields
-constexpr auto FV_2 = 0x0020;									// ...
-constexpr auto FV_3 = 0x0040;									// And so on ...
-constexpr auto FV_4 = 0x0080;									// ...
-constexpr auto FV_5 = 0x0100;									//
-constexpr auto FV_6 = 0x0200;									// There's six ...
-constexpr auto FV_7 = 0x0400;									// ...
-constexpr auto FV_8 = 0x0800;									// All of the surrounding fields contain a mine
-constexpr auto FV_Clear = 0x1000;									// Field is cleared, wheter it contains mine or not
-constexpr auto FV_Change = 0x2000;									// Not used anymore
+constexpr auto FV_Unhidden = 0x1000;									// Field is cleared, wheter it contains mine or not
+constexpr auto FV_Change = 0x2000;									// Used to indicate that the properties of the field was changed since last observation
 constexpr auto FV_Pushed = 0x4000;									// Indicates if left button is down on a field
+
+enum NeighbourDirection
+{
+	ND_RIGHT = 0,
+	ND_BOTTOMRIGHT = 1,
+	ND_BOTTOM = 2,
+	ND_BOTTOMLEFT = 3,
+	ND_LEFT = 4,
+	ND_TOPLEFT = 5,
+	ND_TOP = 6,
+	ND_TOPRIGHT = 7
+};
+
+enum FieldType
+{
+	FT_TOPLEFT = 1,
+	FT_TOP = 2,
+	FT_TOPRIGHT = 4,
+	FT_RIGHT = 8,
+	FT_BOTTOMRIGHT = 16,
+	FT_BOTTOM = 32,
+	FT_BOTTOMLEFT = 64,
+	FT_LEFT = 128,
+	FT_CENTER = 256
+};
+
+enum NeighbourhoodType
+{
+	NT_RIGHT = ~(FieldType::FT_TOPRIGHT | FieldType::FT_RIGHT | FieldType::FT_BOTTOMRIGHT),
+	NT_BOTTOM = ~(FieldType::FT_BOTTOMRIGHT | FieldType::FT_BOTTOM | FieldType::FT_BOTTOMLEFT),
+	NT_LEFT = ~(FieldType::FT_TOPLEFT | FieldType::FT_LEFT | FieldType::FT_BOTTOMLEFT),
+	NT_TOP = ~(FieldType::FT_TOPLEFT | FieldType::FT_TOP | FieldType::FT_TOPRIGHT),
+	NT_BOTTOMRIGHT = NT_BOTTOM & NT_RIGHT,
+	NT_BOTTOMLEFT = NT_BOTTOM & NT_LEFT,
+	NT_TOPLEFT = NT_TOP & NT_LEFT,
+	NT_TOPRIGHT = NT_TOP & NT_RIGHT
+};
+
+class MapInfo;
 
 class Field
 {
+	friend class MapInfo;
 public:
+	int X;
+	int Y;
+	FieldType fieldType;
 
-	Field() { Value = 0; }
-	Field(int value) { Value = value; }
+	Field();
+	Field(int value);
+	Field(FieldType fieldType);
 
-	bool hasMine() { return Value & FV_Mine; }
-	void setMine() { Value |= FV_Mine; }
-	bool hasFlag() { return Value & FV_Flag; }
-	void switchFlag() { Value ^= FV_Flag; }
-	bool isClear() { return Value & FV_Clear; }
-	void setClear() { Value |= FV_Clear; }
-	bool isPushed() { return Value & FV_Pushed; }
-	void setPushed() { Value |= FV_Pushed; }
-	void deletePushed() { Value &= ~FV_Pushed; }
-	bool is0() { return Value & FV_0; }
-	bool is1() { return Value & FV_1; }
-	bool is2() { return Value & FV_2; }
-	bool is3() { return Value & FV_3; }
-	bool is4() { return Value & FV_4; }
-	bool is5() { return Value & FV_5; }
-	bool is6() { return Value & FV_6; }
-	bool is7() { return Value & FV_7; }
-	bool is8() { return Value & FV_8; }
-	void set0() { Value |= FV_0; }
-	void set1() { Value |= FV_1; }
-	void set2() { Value |= FV_2; }
-	void set3() { Value |= FV_3; }
-	void set4() { Value |= FV_4; }
-	void set5() { Value |= FV_5; }
-	void set6() { Value |= FV_6; }
-	void set7() { Value |= FV_7; }
-	void set8() { Value |= FV_8; }
-	void reset() { Value = 0; }
-	Field& Right() { return *Neighbours[0]; }
-	Field& RightBottom() { return *Neighbours[1]; }
-	Field& Bottom() { return *Neighbours[2]; }
-	Field& BottomLeft() { return *Neighbours[3]; }
-	Field& Left() { return *Neighbours[4]; }
-	Field& LeftTop() { return *Neighbours[5]; }
-	Field& Top() { return *Neighbours[6]; }
-	Field& TopRight() { return *Neighbours[7]; }
-	short int v = 0;
+	void setChanged();
+	bool hasMine();
+	void setMine();
+	bool hasFlag();
+	void switchFlag();
+	bool isClear();
+	void setClear();
+	bool isPushed();
+	void setPushed();
+	void deletePushed();
+	void Reset();
+	// TODO: introduce Property class to use getting and setting properties in the same field
+	bool Changed();
+	void Push();
+	void Release();
+	Field* Neighbour(NeighbourDirection direction);
+	std::vector<Field*> Neighbours();
+	bool Reveal(bool cascade = true);
+	void RevealNeighbours();
+	short SurroundingMines();
+	short SurroundingFlags();
 private:
+	MapInfo* Parent;
+	Field* neighbours[8] = { 0 };
+	std::vector<Field*> _neighbours;
+	short value;
 
-	Field* Neighbours[8];
-	short int Value;
-	// Coordinates in the board:
-	int X, Y;
+	void SetNeighbour(NeighbourDirection, Field&);
+	NeighbourhoodType GetNeighbourhoodType(NeighbourDirection);
 
 };
 
