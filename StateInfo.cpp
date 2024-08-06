@@ -63,6 +63,7 @@ void StateInfo::MapChanged(Coordinate c)
 
 void StateInfo::AutoFlag()
 {
+	// TODO: Add menu items for handling this option
 	for (int i = 0; i < map.sizeX; ++i)
 	{
 		for (int j = 0; j < map.sizeY; ++j)
@@ -85,6 +86,7 @@ void StateInfo::AutoFlag()
 
 void StateInfo::AutoClick()
 {
+	// TODO: Add menu items for handling this option
 	for (int i = 0; i < map.sizeX; ++i)
 	{
 		for (int j = 0; j < map.sizeY; ++j)
@@ -117,6 +119,7 @@ Field* StateInfo::GetActiveField()
 
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
+	// TODO: Just pass the parameter to MouseInfo class and let it to handle its own events
 	mouse.XP = mouse.X;
 	mouse.YP = mouse.Y;
 	mouse.X = GET_X_LPARAM(lParam);
@@ -139,6 +142,7 @@ void StateInfo::OnMouseMove(LPARAM lParam)
 
 void StateInfo::OnLeftButtonDown(LPARAM lParam)
 {
+	// TODO: Just pass the parameter to MouseInfo class and let it to handle its own events
 	mouse.LDX = GET_X_LPARAM(lParam);
 	mouse.LDY = GET_Y_LPARAM(lParam);
 	if (!GO && mouse.LDX >= grid.gx && mouse.LDY >= grid.gy)
@@ -151,6 +155,7 @@ void StateInfo::OnLeftButtonDown(LPARAM lParam)
 
 void StateInfo::OnLeftButtonUp(LPARAM lParam)
 {
+	// TODO: Just pass the parameter to MouseInfo class and let it to handle its own events
 	mouse.LUX = GET_X_LPARAM(lParam);
 	mouse.LUY = GET_Y_LPARAM(lParam);
 	int ux = (mouse.LUX - grid.gx) / grid.w;
@@ -191,6 +196,7 @@ void StateInfo::LeftButtonUp(int x, int y)
 
 void StateInfo::OnRightButtonDown(LPARAM lParam)
 {
+	// TODO: Just pass the parameter to MouseInfo class and let it to handle its own events
 	mouse.RDX = GET_X_LPARAM(lParam);
 	mouse.RDY = GET_Y_LPARAM(lParam);
 	if (!GO && mouse.RDX >= grid.gx && mouse.RDY >= grid.gy)
@@ -206,6 +212,7 @@ void StateInfo::OnRightButtonDown(LPARAM lParam)
 
 void StateInfo::OnRightButtonUp(LPARAM lParam)
 {
+	// TODO: Just pass the parameter to MouseInfo class and let it to handle its own events
 	mouse.RUX = GET_X_LPARAM(lParam);
 	mouse.RUY = GET_Y_LPARAM(lParam);
 }
@@ -245,6 +252,7 @@ int StateInfo::NewGame(int sizeX, int sizeY, int cMine, int clickX, int clickY)
 
 int StateInfo::FillMap(int a, int b, int cMine)
 {
+	// TODO: Use a more simple algorithm for this operation
 	int n = rand() % (b - a - 1) + a + 1;
 	int nx = n / map.sizeY;
 	int ny = n % map.sizeY;

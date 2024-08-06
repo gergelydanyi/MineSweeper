@@ -9,6 +9,8 @@
 #include <time.h>
 #include "StateInfo.h"
 
+// TODO: Move graphical functions into a separate class
+
 LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void DrawCustomTitleBar(HWND hwnd, HDC hdc);
 void DrawCustomControlButtons(HWND hwnd, HDC hdc);
@@ -111,7 +113,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					return 0;
 					case ID_NEW_CUSTOM:
 					{
-						//TODO: input dialog box is needed
+						// TODO: input dialog box is needed
 						pState->NewGame(90, 50, 750, 0, 0);
 						pState->NG = true;
 					}
@@ -165,6 +167,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_TIMER:
 		{
+			// TODO: consider creating a Callback function for timer
 			HDC hdc = GetWindowDC(hwnd);
 			std::wstring ws;
 			const wchar_t* cs;
@@ -181,6 +184,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_PAINT:
 		{
+			// TODO: Using bitmaps for rendering instead of direct drawing every time
 			//RECT UpdateRect = {};
 			//BOOL GetUpdateRectReturnValue = GetUpdateRect(hwnd, &UpdateRect, FALSE);
 			BOOL GetUpdateRectReturnValue = GetUpdateRect(hwnd, NULL, FALSE);
@@ -201,7 +205,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					SelectObject(hdc, GetStockObject(DC_BRUSH));
 					SelectObject(hdc, GetStockObject(DC_PEN));
 					//DrawCustomTitleBar(hwnd, hdc);
-					//DrawMap(hdc, pState, hrgn);
+					DrawMap(hdc, pState, hrgn);
 					EndPaint(hwnd, &ps);
 					break;
 				}
@@ -211,6 +215,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_NCPAINT:
 		{
+			// TODO: Clear up this section to work properly
 			//DefWindowProcW(hwnd, uMsg, wParam, lParam);
 			HDC hdc = GetWindowDC(hwnd);
 			DrawCustomTitleBar(hwnd, hdc);
@@ -484,6 +489,7 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j, bool cascade)
 
 int DrawMine(HDC hdc, StateInfo* pState, int i, int j)
 {
+	// TODO: Use a bitmap instead
 	long gx = pState->grid.gx;
 	long gy = pState->grid.gy;
 	int w = pState->grid.w;
@@ -515,6 +521,7 @@ int DrawMine(HDC hdc, StateInfo* pState, int i, int j)
 
 int DrawFlag(HDC hdc, StateInfo* pState, int i, int j)
 {
+	// TODO: Use a bitmap instead
 	long gx = pState->grid.gx;
 	long gy = pState->grid.gy;
 	int w = pState->grid.w;
@@ -588,6 +595,7 @@ int DrawMap(HDC hdc, StateInfo* pState, HRGN hrgn)
 
 int debugStr(long k, int i, HDC hdc, const wchar_t* s)
 {
+	// TODO: It is unnecessary in this form, delete it
 	std::wstring ws;
 	const wchar_t* cs;
 	wchar_t wts[30];
@@ -607,6 +615,7 @@ int debugStr(long k, int i, HDC hdc, const wchar_t* s)
 
 int debug(HWND hwnd, StateInfo* pState)
 {
+	// TODO: It is unnecessary in this form, delete it
 	return 0;
 	HDC hdc = GetWindowDC(hwnd);
 	SetBkColor(hdc, RGB(0, 0, 0));

@@ -2,6 +2,8 @@
 #include <vector>
 // Field value constants for individual areas on gameboard
 
+// TODO: Consider removing these constants
+
 constexpr auto FV_Mine = 0x0001;									// A mine is on the field
 constexpr auto FV_Flag = 0x0002;									// The field is suggested to contain mine, a flag is drawn after right click
 constexpr auto FV_Ask = 0x0004;									// Question mark is drawn after second right click (not yet ready)
