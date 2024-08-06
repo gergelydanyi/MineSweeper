@@ -49,6 +49,16 @@ void Field::switchFlag()
 	setChanged();
 }
 
+void Field::setFlag()
+{
+	value |= FV_Flag;
+	setChanged();
+	for (Field* field : Neighbours())
+	{
+		field->setChanged();
+	}
+}
+
 bool Field::isClear()
 {
 	return value & FV_Unhidden;
@@ -90,7 +100,14 @@ void Field::Reset()
 {
 	if (value)
 	{
+		fieldType = FT_EMPTY;
+		for (int i = 0; i < 8; ++i)
+		{
+			neighbours[i] = 0;
+		}
+		_neighbours.clear();
 		value = 0;
+
 		setChanged();
 	}
 }
@@ -186,6 +203,34 @@ short Field::SurroundingFlags()
 		}
 	}
 	return flags;
+}
+
+short Field::SurroundingHiddenFields()
+{
+	short fields = 0;
+	for (Field* f : Neighbours())
+	{
+		if (!f->isClear())
+		{
+			++fields;
+		}
+	}
+	return fields;
+
+}
+
+short Field::SurroundingVisibleFields()
+{
+	short fields = 0;
+	for (Field* f : Neighbours())
+	{
+		if (f->isClear())
+		{
+			++fields;
+		}
+	}
+	return fields;
+
 }
 
 void Field::SetNeighbour(NeighbourDirection direction, Field& field)

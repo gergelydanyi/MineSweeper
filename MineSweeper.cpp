@@ -76,7 +76,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		CREATESTRUCTW* pcs = reinterpret_cast<CREATESTRUCTW*>(lParam);
 		pState = reinterpret_cast<StateInfo*>(pcs->lpCreateParams);
 		SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)pState);
-		pState->NewGame(hwnd, 9, 9, 10, 0, 0);
+		pState->NewGame(9, 9, 10, 0, 0);
 	}
 	else
 	{
@@ -93,26 +93,26 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				{
 					case ID_NEW_EASY:
 					{
-						pState->NewGame(hwnd, 9, 9, 10, 0, 0);
+						pState->NewGame(9, 9, 10, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_NORMAL:
 					{
-						pState->NewGame(hwnd, 16, 16, 40, 0, 0);
+						pState->NewGame(16, 16, 40, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_HARD:
 					{
-						pState->NewGame(hwnd, 30, 16, 99, 0, 0);
+						pState->NewGame(30, 16, 99, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
 					case ID_NEW_CUSTOM:
 					{
 						//TODO: input dialog box is needed
-						pState->NewGame(hwnd, 90, 50, 350, 0, 0);
+						pState->NewGame(90, 50, 750, 0, 0);
 						pState->NG = true;
 					}
 					return 0;
@@ -128,19 +128,19 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 		case WM_LBUTTONDOWN:
 		{
-			pState->OnLeftButtonDown(hwnd, lParam);
+			pState->OnLeftButtonDown(lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_LBUTTONUP:
 		{
-			pState->OnLeftButtonUp(hwnd, lParam);
+			pState->OnLeftButtonUp(lParam);
 			debug(hwnd, pState);
 		}
 		return 0;
 		case WM_RBUTTONDOWN:
 		{
-			pState->OnRightButtonDown(hwnd, lParam);
+			pState->OnRightButtonDown(lParam);
 			InvalidateNeighbourhood(hwnd, lParam, pState);
 			debug(hwnd, pState);
 		}
@@ -149,6 +149,18 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			pState->OnRightButtonUp(lParam);
 			debug(hwnd, pState);
+		}
+		return 0;
+		case WM_KEYDOWN:
+		{
+			if (wParam == 0x41)
+			{
+				pState->AutoClick();
+			}
+			if (wParam == 0x46)
+			{
+				pState->AutoFlag();
+			}
 		}
 		return 0;
 		case WM_TIMER:
@@ -179,18 +191,17 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				int GetUpdateRgnReturnValue = GetUpdateRgn(hwnd, hrgn, TRUE);
 				switch (GetUpdateRgnReturnValue)
 				{
-				case COMPLEXREGION:
-					break;
 				case ERROR:
 					break;
 				case NULLREGION:
 					break;
+				case COMPLEXREGION:
 				case SIMPLEREGION:
 					HDC hdc = BeginPaint(hwnd, &ps);
 					SelectObject(hdc, GetStockObject(DC_BRUSH));
 					SelectObject(hdc, GetStockObject(DC_PEN));
 					//DrawCustomTitleBar(hwnd, hdc);
-					DrawMap(hdc, pState, hrgn);
+					//DrawMap(hdc, pState, hrgn);
 					EndPaint(hwnd, &ps);
 					break;
 				}
@@ -232,7 +243,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 		}
 		return 0;
-		case WM_SETCURSOR:
+		/*case WM_SETCURSOR:
 		{
 			HCURSOR hc = NULL;
 			switch (LOWORD(lParam))
@@ -261,7 +272,7 @@ LRESULT CALLBACK HandleMessages(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				return TRUE;
 			}
 		}
-		return 0;
+		return 0;*/
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
@@ -427,6 +438,39 @@ int DrawField(HDC hdc, StateInfo* pState, int i, int j, bool cascade)
 		Polygon(hdc, apt, 3);
 		SetDCBrushColor(hdc, clr_BtnFace);
 		SetDCPenColor(hdc, clr_BtnFace);
+		if (pState->map(i, j).hasFlag())
+		{
+			SetDCBrushColor(hdc, clr_GridBackGreen);
+			SetDCPenColor(hdc, clr_GridBackGreen);
+		}
+		if (false)
+		{
+			Field* hiddenField = &(pState->map(i, j));
+			if (!hiddenField->isClear() && hiddenField->SurroundingVisibleFields() != 0)
+			{
+				for (Field* field : hiddenField->Neighbours())
+				{
+					if (field->SurroundingMines() == field->SurroundingHiddenFields())
+					{
+						SetDCBrushColor(hdc, clr_BtnFaceForbidden);
+						SetDCPenColor(hdc, clr_BtnFaceForbidden);
+						break;
+					}
+					/*else if (field->SurroundingMines() == field->SurroundingFlags() && !hiddenField->hasFlag())
+					{
+						SetDCBrushColor(hdc, clr_BtnFaceSafe);
+						SetDCPenColor(hdc, clr_BtnFaceSafe);
+						break;
+					}*/
+				}
+			}
+		}
+		Field* activeField = pState->GetActiveField();
+		if (i == activeField->X && j == activeField->Y && activeField->SurroundingVisibleFields() == 0)
+		{
+			SetDCBrushColor(hdc, clr_BtnFaceFocus);
+			SetDCPenColor(hdc, clr_BtnFaceFocus);
+		}
 		int border = 2;
 		Rectangle(hdc, gx + i * w + border, gy + j * h + border, gx + i * w + w - border, gy + j * h + h - border);
 		if (pState->map(i, j).hasFlag())

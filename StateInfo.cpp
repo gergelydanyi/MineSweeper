@@ -27,6 +27,7 @@ StateInfo::StateInfo()
 {
 	map.Parent = this;
 	map.Clear();
+	activeField = &map(0, 0);
 }
 
 void StateInfo::InvalidateMap()
@@ -60,15 +61,83 @@ void StateInfo::MapChanged(Coordinate c)
 	InvalidateRect(mainWindow, &r, TRUE);
 }
 
+void StateInfo::AutoFlag()
+{
+	for (int i = 0; i < map.sizeX; ++i)
+	{
+		for (int j = 0; j < map.sizeY; ++j)
+		{
+			Field* thisField = &map(i, j);
+			if (!thisField->isClear() && !thisField->hasFlag())
+			{
+				for (Field* field : thisField->Neighbours())
+				{
+					if (field->SurroundingMines() == field->SurroundingHiddenFields())
+					{
+						thisField->setFlag();
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+void StateInfo::AutoClick()
+{
+	for (int i = 0; i < map.sizeX; ++i)
+	{
+		for (int j = 0; j < map.sizeY; ++j)
+		{
+			if (!map(i, j).isClear() && map(i, j).SurroundingVisibleFields() > 0 && !map(i, j).hasFlag())
+			{
+				for (Field* field : map(i, j).Neighbours())
+				{
+					if (field->isClear() && field->SurroundingFlags() == field->SurroundingMines())
+					{
+						LeftButtonUp(i, j);
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+Field* StateInfo::GetActiveField()
+{
+	if (mouse.X >= grid.gx && mouse.Y >= grid.gy)
+	{
+		int x = (mouse.X - grid.gx) / grid.w;
+		int y = (mouse.Y - grid.gy) / grid.h;
+		activeField = &map(x, y);
+	}
+	return activeField;
+}
+
 void StateInfo::OnMouseMove(LPARAM lParam)
 {
 	mouse.XP = mouse.X;
 	mouse.YP = mouse.Y;
 	mouse.X = GET_X_LPARAM(lParam);
 	mouse.Y = GET_Y_LPARAM(lParam);
+	if (mouse.X >= grid.gx && mouse.Y >= grid.gy)
+	{
+		int xp = (mouse.XP - grid.gx) / grid.w;
+		int yp = (mouse.YP - grid.gy) / grid.h;
+		int x = (mouse.X - grid.gx) / grid.w;
+		int y = (mouse.Y - grid.gy) / grid.h;
+		if (x != xp || y != yp)
+		{
+			RECT r = grid.GetRect(x, y);
+			InvalidateRect(mainWindow, &r, TRUE);
+			RECT r2 = grid.GetRect(xp, yp);
+			InvalidateRect(mainWindow, &r2, TRUE);
+		}
+	}
 }
 
-void StateInfo::OnLeftButtonDown(HWND hwnd, LPARAM lParam)
+void StateInfo::OnLeftButtonDown(LPARAM lParam)
 {
 	mouse.LDX = GET_X_LPARAM(lParam);
 	mouse.LDY = GET_Y_LPARAM(lParam);
@@ -80,7 +149,7 @@ void StateInfo::OnLeftButtonDown(HWND hwnd, LPARAM lParam)
 	}
 }
 
-void StateInfo::OnLeftButtonUp(HWND hwnd, LPARAM lParam)
+void StateInfo::OnLeftButtonUp(LPARAM lParam)
 {
 	mouse.LUX = GET_X_LPARAM(lParam);
 	mouse.LUY = GET_Y_LPARAM(lParam);
@@ -94,25 +163,33 @@ void StateInfo::OnLeftButtonUp(HWND hwnd, LPARAM lParam)
 		map(ux, uy).Release();
 		if (dx == ux && dy == uy && !map(ux, uy).hasFlag())// && !pState->GO)
 		{
-			if (NG)
-			{
-				NewGame(hwnd, map.sizeX, map.sizeY, map.cMine, ux + 1, uy + 1);
-				NG = false;
-			}
-			if (map(ux, uy).Reveal())
-			{
-				GameOver(hwnd);
-			}
-			if (map(ux, uy).SurroundingFlags() == map(ux, uy).SurroundingMines())
-			{
-				map(ux, uy).RevealNeighbours();
-			}
+			LeftButtonUp(ux, uy);
 		}
 	}
+	// EXPERIMENTAL
+	 AutoFlag();
+	// EXPERIMENTAL
 	InvalidateMap();
 }
 
-void StateInfo::OnRightButtonDown(HWND hwnd, LPARAM lParam)
+void StateInfo::LeftButtonUp(int x, int y)
+{
+	if (NG)
+	{
+		NewGame(map.sizeX, map.sizeY, map.cMine, x + 1, y + 1);
+		NG = false;
+	}
+	if (map(x, y).Reveal())
+	{
+		GameOver();
+	}
+	if (map(x, y).SurroundingFlags() == map(x, y).SurroundingMines())
+	{
+		map(x, y).RevealNeighbours();
+	}
+}
+
+void StateInfo::OnRightButtonDown(LPARAM lParam)
 {
 	mouse.RDX = GET_X_LPARAM(lParam);
 	mouse.RDY = GET_Y_LPARAM(lParam);
@@ -121,6 +198,9 @@ void StateInfo::OnRightButtonDown(HWND hwnd, LPARAM lParam)
 		int dx = (mouse.RDX - grid.gx) / grid.w;
 		int dy = (mouse.RDY - grid.gy) / grid.h;
 		map(dx, dy).switchFlag();
+		// EXPERIMENTAL
+		// AutoFlag();
+		// EXPERIMENTAL
 	}
 }
 
@@ -130,7 +210,7 @@ void StateInfo::OnRightButtonUp(LPARAM lParam)
 	mouse.RUY = GET_Y_LPARAM(lParam);
 }
 
-int StateInfo::NewGame(HWND hwnd, int sizeX, int sizeY, int cMine, int clickX, int clickY)
+int StateInfo::NewGame(int sizeX, int sizeY, int cMine, int clickX, int clickY)
 {
 	GO = false;
 	grid.cx = sizeX;
@@ -181,7 +261,7 @@ int StateInfo::FillMap(int a, int b, int cMine)
 	return 0;
 }
 
-void StateInfo::GameOver(HWND hwnd)
+void StateInfo::GameOver()
 {
 	GO = true;
 	for (int i = 0; i < map.sizeX; ++i)

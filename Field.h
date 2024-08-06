@@ -23,6 +23,7 @@ enum NeighbourDirection
 
 enum FieldType
 {
+	FT_EMPTY = 0,
 	FT_TOPLEFT = 1,
 	FT_TOP = 2,
 	FT_TOPRIGHT = 4,
@@ -65,6 +66,7 @@ public:
 	void setMine();
 	bool hasFlag();
 	void switchFlag();
+	void setFlag();
 	bool isClear();
 	void setClear();
 	bool isPushed();
@@ -81,6 +83,8 @@ public:
 	void RevealNeighbours();
 	short SurroundingMines();
 	short SurroundingFlags();
+	short SurroundingHiddenFields();
+	short SurroundingVisibleFields();
 private:
 	MapInfo* Parent;
 	Field* neighbours[8] = { 0 };

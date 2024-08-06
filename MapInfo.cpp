@@ -16,7 +16,7 @@ void MapInfo::Init()
 			(*this)(i, j).Y = j;
 			(*this)(i, j).fieldType = GetFieldType(i, j);
 			(*this)(i, j).Parent = this;
-
+			// TODO: set vector empty for each field (Field._neighbours)
 			SetFieldNeighbourhood(i, j);
 		}
 	}
@@ -24,9 +24,9 @@ void MapInfo::Init()
 
 int MapInfo::Clear()
 {
-	for (int i = 0; i < sizeX; ++i)
+	for (int i = 0; i < Xmax; ++i)
 	{
-		for (int j = 0; j < sizeY; ++j)
+		for (int j = 0; j < Ymax; ++j)
 		{
 			(*this)(i, j).Reset();
 		}
