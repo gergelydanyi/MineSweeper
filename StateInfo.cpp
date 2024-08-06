@@ -243,6 +243,46 @@ int StateInfo::NewGame(int sizeX, int sizeY, int cMine, int clickX, int clickY)
 	return 0;
 }
 
+/*
+
+Future code for replacing the below function:
+
+bool Probability(int a, int b)
+{
+	if (a == b) { return true; }
+	return rand() < a * RAND_MAX / (double)b;
+}
+
+short GetMineRandomValue(short & missingMines, short & emptyFields)
+{
+	short r = Probability(missingMines, emptyFields--) ? 1 : 0;
+	missingMines -= r;
+	return r;
+}
+
+And example of use:
+
+srand(time(0));
+	short mines = 0;
+	const short numberOfFields = 32767;
+	const short numberOfRequiredMines = 327;
+	short emptyFields;
+	short missingMines;
+	char fields[numberOfFields] = {};
+
+	for (int k = 0; k < 100; ++k)
+	{
+		emptyFields = numberOfFields;
+		missingMines = numberOfRequiredMines;
+		for (int l = 0; l < numberOfFields; ++l)
+		{
+			GetMineRandomValue(missingMines, emptyFields);
+		}
+		std::cout << missingMines;
+	}
+
+*/
+
 int StateInfo::FillMap(int a, int b, int cMine)
 {
 	int n = rand() % (b - a - 1) + a + 1;
